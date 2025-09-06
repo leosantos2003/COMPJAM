@@ -48,6 +48,7 @@ BARS_RECHARGE_RATE = 25.0       # Pontos de "Força" ganhos por segundo ao estar
 
 # --- Adicionado para o item "Herb" ---
 HERB_ENABLED = True # Defina como False para desativar completamente o item "herb" e seus efeitos
+HERB_SPAWN_CHANCE = 0.001 # Chance de um "Herb" aparecer por frame
 
 # --- IA do Inimigo (MODO PESADELO) ---
 ENEMY_HEARING_BASE = 320           # Ouve o jogador a uma distância muito maior
