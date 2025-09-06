@@ -3,7 +3,7 @@ SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 FULLSCREEN = True  # Mude para False para jogar em modo janela
 FPS = 60
-TITLE = "A Ronda do Inspetor"
+TITLE = "Grand Theft Auto V: INF Version"
 
 # Cores
 BLACK = (0, 0, 0)
@@ -94,4 +94,8 @@ DIFFICULTY_LEVELS = {
         "ENEMY_PATH_RECALC": 0.10,
         "ENEMY_FEELER_LEN": 25,
     }
-}
+
+# HUD
+BAR_LENGTH = 200
+BAR_HEIGHT = 25
+
