@@ -1,10 +1,7 @@
 import math
 import pygame
 from settings import *
-from utils import clamp
-
-def _rect_of(spr):
-    return getattr(spr, "hitbox", spr.rect)
+from utils import clamp, _rect_of
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):

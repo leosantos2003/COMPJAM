@@ -23,6 +23,8 @@ class Map:
         self.grid = []
         self.solids = pygame.sprite.Group()
         self.spawn_tile = (4, 5)  # fallback se não houver 'P' no arquivo
+        self.cig_positions = []
+        self.bar_positions = []
 
         # carrega sprites e faz scale pro TILE
         self.wall_img = pygame.image.load("assets/wall.png").convert_alpha()
@@ -38,12 +40,20 @@ class Map:
                 line = list(raw.rstrip("\n"))
                 self.grid.append(line)
                 for i, ch in enumerate(line):
+                    # Posição em pixels
+                    px_center = i * TILE + TILE // 2
+                    py_center = j * TILE + TILE // 2
                     if ch == "1":
                         self.solids.add(Tile(self.wall_img, i, j, kind="wall"))
                     elif ch == "T":
                         self.solids.add(Tile(self.tree_img, i, j, kind="tree"))
                     elif ch == "P":
                         self.spawn_tile = (i, j)
+                    elif ch == "C":
+                        self.cig_positions.append((px_center, py_center))
+                    elif ch == "B":
+                        self.bar_positions.append((px_center, py_center))
+
 
         # fundo xadrez suave (pré-draw simples)
         self.bg = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
