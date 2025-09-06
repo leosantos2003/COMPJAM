@@ -44,9 +44,9 @@ class Game:
             b = PullUpBar(*pos)
             self.bars.add(b); self.all_sprites.add(b)
 
-        # inimigo com patrulha simples (retângulo)
-        patrol = [(150,150), (900,150), (900,650), (150,650)]
-        self.enemy = Enemy(patrol)
+        # inimigo agora persegue o jogador
+        # patrol = [(150,150), (900,150), (900,650), (150,650)] # Linha removida
+        self.enemy = Enemy(800, 400) # Cria o inimigo em uma posição inicial (x, y)
         self.enemies.add(self.enemy); self.all_sprites.add(self.enemy)
 
         # objetivos e estado
@@ -82,7 +82,13 @@ class Game:
             self.playing = False
 
         # atualiza sprites (passando dt)
-        self.all_sprites.update(self.dt)
+        # self.all_sprites.update(self.dt)
+
+        # Atualiza os sprites individualmente ou por grupos que não precisam de argumentos extras
+        self.player.update(self.dt)
+        self.items.update(self.dt)
+        self.bars.update(self.dt)
+        self.enemy.update(self.dt, self.player) # Passa o jogador para o inimigo
 
         # coleta de cigarros (pickup instantâneo)
         got = pygame.sprite.spritecollide(self.player, self.items, dokill=True)

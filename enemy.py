@@ -4,36 +4,34 @@ from settings import *
 from utils import clamp
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, patrol_points):
+    def __init__(self, x, y): # Alterado para receber uma posição inicial
         super().__init__()
         self.image = pygame.Surface((TILE, TILE))
         self.image.fill(RED)
         self.rect = self.image.get_rect()
-        self.patrol = patrol_points[:]  # lista de (x, y) em pixels
-        self.i = 0
-        self.rect.center = self.patrol[self.i]
+        self.rect.center = (x, y) # Define a posição inicial
         self.dir = pygame.math.Vector2(1, 0)  # direção "olhando"
         self.vel = pygame.math.Vector2(0, 0)
 
-    def update(self, dt):
-        # anda até o próximo ponto
-        target = pygame.math.Vector2(self.patrol[self.i])
+    def update(self, dt, player): # Adicionado o parâmetro 'player'
+        # O alvo agora é sempre o jogador
+        target = pygame.math.Vector2(player.rect.center)
         pos = pygame.math.Vector2(self.rect.center)
         delta = target - pos
         dist = delta.length()
-        if dist > 2:
+
+        # Move-se em direção ao jogador se não estiver muito perto
+        if dist > TILE / 2: # Evita que o inimigo "trema" em cima do jogador
             self.vel = delta.normalize() * ENEMY_SPEED
             move = self.vel * dt
             self.rect.centerx += move.x
             self.rect.centery += move.y
-            if self.vel.length_squared() > 0:
-                self.dir = self.vel.normalize()
         else:
-            # vai para o próximo e já define a direção para lá
-            self.i = (self.i + 1) % len(self.patrol)
-            nxt = pygame.math.Vector2(self.patrol[self.i]) - pygame.math.Vector2(self.rect.center)
-            if nxt.length_squared() > 0:
-                self.dir = nxt.normalize()
+            self.vel = pygame.math.Vector2(0, 0)
+
+        # Atualiza a direção para onde está se movendo
+        if self.vel.length_squared() > 0:
+            self.dir = self.vel.normalize()
 
     # Checa se player está no cone de visão
     def sees(self, player):
@@ -56,5 +54,3 @@ class Enemy(pygame.sprite.Sprite):
         right_vec = (math.cos(right_a)*FOV_RANGE, math.sin(right_a)*FOV_RANGE)
         pts = [origin, origin + left_vec, origin + right_vec]
         pygame.draw.polygon(surface, (255, 100, 100), pts, width=2)
-
-
