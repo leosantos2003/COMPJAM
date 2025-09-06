@@ -271,7 +271,7 @@ class Game:
     def draw(self):
         self.game_map.draw(self.screen)
         self.all_sprites.draw(self.screen)
-        self.enemy.draw_fov(self.screen)
+        self.enemy.draw_fov(self.screen, self.solids)
         self.draw_hud()
         
         # --- Legenda do Inspetor ---
