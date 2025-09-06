@@ -236,7 +236,7 @@ class Game:
         timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH / 2, 30))
         self.screen.blit(timer_text, timer_rect)
 
-    """
+
     def draw_status_animations(self):
         if self.is_smoking:
             self.smoke_anim_timer += self.dt
@@ -261,15 +261,14 @@ class Game:
             col = self.bar_anim_index % len(self.bar_frames[0])
             frame = self.bar_frames[row][col]
             self.screen.blit(pygame.transform.smoothscale(frame, (150, 78)), (SCREEN_WIDTH - 165, 15))
-    """
+
 
     def draw(self):
-        self.game_map.draw(self.screen)  # fundo + tiles
+        self.game_map.draw(self.screen)
         self.all_sprites.draw(self.screen)
         self.enemy.draw_fov(self.screen)
         self.draw_hud()
-        # A chamada para self.draw_status_animations() foi removida daqui
-
+        
         # --- Legenda do Inspetor ---
         texto_legenda_inimigo = self.enemy.name
         cor_legenda_inimigo = WHITE
@@ -323,6 +322,19 @@ class Game:
                 # Posiciona a animação acima da legenda
                 anim_rect.midbottom = legenda_rect_jogador.midtop - pygame.math.Vector2(0, 3)
                 self.screen.blit(scaled_frame, anim_rect)
+
+        # --- Aura e Texto Abaixo do Jogador ---
+        if self.aura_active:
+            # Posição da imagem da aura: abaixo do jogador
+            aura_offset_y = 10 
+            aura_rect = self.aura_image.get_rect(midtop=(self.player.rect.centerx, self.player.rect.bottom + aura_offset_y))
+            self.screen.blit(self.aura_image, aura_rect)
+
+            # Posição do texto da aura: abaixo da imagem da aura
+            text_offset_y = 5 
+            aura_text_surf = self.font.render("+AURA +EGO", True, WHITE)
+            aura_text_rect = aura_text_surf.get_rect(midtop=(aura_rect.centerx, aura_rect.bottom + text_offset_y))
+            self.screen.blit(aura_text_surf, aura_text_rect)
 
         pygame.display.flip()
 
