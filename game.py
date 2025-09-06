@@ -5,6 +5,7 @@ import sys
 import time
 import random
 import math
+import json
 from settings import *
 from player import Player
 from enemy import Enemy
@@ -38,6 +39,7 @@ class Game:
             self.menu_font_selected = pygame.font.Font("fonts/Pricedown_BL.otf", 40)
             self.hud_font = pygame.font.Font("fonts/Pricedown_BL.otf", 20)
             self.timer_font = pygame.font.Font("fonts/Pricedown_BL.otf", 28)
+            self.leaderboard_font = pygame.font.Font("fonts/Pricedown_BL.otf", 30)
         except FileNotFoundError:
             print("Aviso: Arquivo de fonte não encontrado. Usando fontes padrão.")
             self.title_font = pygame.font.SysFont(None, 80)
@@ -45,6 +47,7 @@ class Game:
             self.menu_font_selected = pygame.font.SysFont(None, 55)
             self.hud_font = pygame.font.SysFont(None, 28)
             self.timer_font = pygame.font.SysFont(None, 40)
+            self.leaderboard_font = pygame.font.SysFont(None, 45)
             
         try:
             self.menu_nav_sound = pygame.mixer.Sound("assets/sound/menu_sound.wav")
@@ -78,6 +81,8 @@ class Game:
         self.score = 0
         self.start_time = 0
         self.difficulty = "Normal" # Dificuldade padrão
+        self.leaderboard = self._load_leaderboard()
+
 
         # --- CÓDIGO NOVO PARA CARREGAR A MÚSICA ---
         try:
@@ -112,7 +117,93 @@ class Game:
         # --------------------------------------------------
         
 
-    def _draw_menu_options(self, options, selected_option, start_y, line_spacing=70):
+    def _load_leaderboard(self):
+        try:
+            with open('leaderboard.json', 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return []
+
+    def _save_leaderboard(self):
+        with open('leaderboard.json', 'w') as f:
+            json.dump(self.leaderboard, f, indent=4)
+
+    def _is_high_score(self, score):
+        if self.difficulty != "Pesadelo":
+            return False
+        if len(self.leaderboard) < 5 or score > self.leaderboard[-1]['score']:
+            return True
+        return False
+
+    def _add_high_score(self, name, score):
+        self.leaderboard.append({'name': name, 'score': score})
+        self.leaderboard = sorted(self.leaderboard, key=lambda x: x['score'], reverse=True)[:5]
+        self._save_leaderboard()
+
+    def _get_player_name_input(self):
+        player_name = ""
+        input_active = True
+        while input_active:
+            self.screen.fill(BLACK)
+            title_surf = self.title_font.render("Novo Recorde!", True, GREEN)
+            title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 4))
+            self.screen.blit(title_surf, title_rect)
+
+            prompt_surf = self.menu_font_normal.render("Digite seu nome:", True, WHITE)
+            prompt_rect = prompt_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2 - 50))
+            self.screen.blit(prompt_surf, prompt_rect)
+
+            name_surf = self.menu_font_selected.render(player_name, True, YELLOW)
+            name_rect = name_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+            self.screen.blit(name_surf, name_rect)
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        input_active = False
+                    elif event.key == pygame.K_BACKSPACE:
+                        player_name = player_name[:-1]
+                    else:
+                        player_name += event.unicode
+        return player_name
+
+    def show_leaderboard_screen(self):
+        leaderboard_active = True
+        while leaderboard_active:
+            self.screen.fill(BLACK)
+            title_surf = self.title_font.render("Leaderboard - Pesadelo", True, WHITE)
+            title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, 100))
+            self.screen.blit(title_surf, title_rect)
+
+            if not self.leaderboard:
+                no_scores_surf = self.menu_font_normal.render("Ainda não há pontuações.", True, GRAY)
+                no_scores_rect = no_scores_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
+                self.screen.blit(no_scores_surf, no_scores_rect)
+            else:
+                for i, entry in enumerate(self.leaderboard):
+                    score_text = f"{i + 1}. {entry['name']}: {entry['score']}"
+                    score_surf = self.leaderboard_font.render(score_text, True, YELLOW)
+                    score_rect = score_surf.get_rect(center=(SCREEN_WIDTH / 2, 200 + i * 50))
+                    self.screen.blit(score_surf, score_rect)
+
+            back_surf = self.menu_font_selected.render("Voltar", True, RED)
+            back_rect = back_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 100))
+            self.screen.blit(back_surf, back_rect)
+
+            pygame.display.flip()
+
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit()
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE:
+                        leaderboard_active = False
+
+    def _draw_menu_options(self, options, selected_option, start_y, line_spacing=60):
         """
         Desenha uma lista de opções de menu na tela, aplicando efeitos de seleção
         e diferenciando cores para "Sair" e "Voltar ao Menu".
@@ -225,7 +316,7 @@ class Game:
         title_surf = self.title_font.render(TITLE, True, WHITE)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 4))
         
-        options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Dificuldade", "Sair"]
+        options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Dificuldade", "Leaderboard", "Sair"]
         selected_option = 0
 
         waiting_for_input = True
@@ -255,6 +346,8 @@ class Game:
                             levels = list(DIFFICULTY_LEVELS.keys())
                             current_idx = levels.index(self.difficulty)
                             self.difficulty = levels[(current_idx + 1) % len(levels)]
+                        elif options[selected_option] == "Leaderboard":
+                            self.show_leaderboard_screen()
                         else:
                             waiting_for_input = False; self.running = False; return None, None
             
@@ -306,6 +399,10 @@ class Game:
 
         # Quando o loop de jogo (self.playing) termina, decide o que fazer a seguir
         if self.result == "lose":
+            if self._is_high_score(self.score):
+                player_name = self._get_player_name_input()
+                self._add_high_score(player_name, self.score)
+                self.show_leaderboard_screen()
             return self.death_screen() # Retorna a ação escolhida pelo usuário ("restart", "menu" ou "quit")
 
         # Se o jogo terminou por outro motivo (ex: ESC), volta ao menu
