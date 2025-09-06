@@ -1,5 +1,6 @@
 import pygame
 import sys
+import time
 from settings import *
 from player import Player
 from enemy import Enemy
@@ -22,10 +23,10 @@ class Game:
         self.dt = 0
         self.font = pygame.font.SysFont(None, 28)
         self.title_font = pygame.font.SysFont(None, 80)
+        self.timer_font = pygame.font.SysFont(None, 40)
 
         # Carregar animações de status com as dimensões corretas
         self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427, 240)
-        # CORREÇÃO FINAL COM AS SUAS DIMENSÕES: 461x240
         self.bar_frames = load_spritesheet_grid("assets/bar.png", 461, 240)
         self.is_smoking = False
         self.is_doing_pullups = False
@@ -35,55 +36,65 @@ class Game:
         self.bar_anim_timer = 0
         self.anim_speed = 0.1
 
+        self.maps = ["map.txt", "map2.txt", "map3.txt"]
+        self.score = 0
+        self.start_time = 0
+
     def show_menu_screen(self):
         self.screen.fill(BLACK)
         title_surf = self.title_font.render(TITLE, True, WHITE)
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/6))
         self.screen.blit(title_surf, title_rect)
 
-        # Ajustando a posição dos botões para serem reutilizáveis
-        button_play_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
-        button_quit_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
-
+        # Opções do menu
+        options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Sair"]
         selected_option = 0
-        options = ["Jogar", "Sair"]
+
         waiting_for_input = True
         while waiting_for_input:
             self.clock.tick(FPS)
+
+            # Desenha as opções
+            for i, option in enumerate(options):
+                color = GREEN if i == selected_option else GRAY
+                rect = pygame.Rect(SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 50 + i * 70, 300, 50)
+                pygame.draw.rect(self.screen, color, rect)
+                text_surf = self.font.render(option, True, BLACK)
+                text_rect = text_surf.get_rect(center=rect.center)
+                self.screen.blit(text_surf, text_rect)
+
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting_for_input = False
                     self.running = False
+                    return None
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_DOWN: selected_option = (selected_option + 1) % len(options)
-                    elif event.key == pygame.K_UP: selected_option = (selected_option - 1) % len(options)
+                    if event.key == pygame.K_DOWN:
+                        selected_option = (selected_option + 1) % len(options)
+                    elif event.key == pygame.K_UP:
+                        selected_option = (selected_option - 1) % len(options)
                     if event.key == pygame.K_RETURN:
-                        if selected_option == 0: waiting_for_input = False # Inicia o jogo
-                        else: # Sai do jogo
+                        if selected_option < len(self.maps): # Opções de mapa
+                            waiting_for_input = False
+                            return self.maps[selected_option]
+                        else: # Sair
                             waiting_for_input = False
                             self.running = False
-
-            play_color = GREEN if selected_option == 0 else GRAY
-            quit_color = RED if selected_option == 1 else GRAY
-
-            pygame.draw.rect(self.screen, play_color, button_play_rect)
-            play_text = self.font.render("Jogar", True, BLACK)
-            self.screen.blit(play_text, play_text.get_rect(center=button_play_rect.center))
-
-            pygame.draw.rect(self.screen, quit_color, button_quit_rect)
-            quit_text = self.font.render("Sair", True, BLACK)
-            self.screen.blit(quit_text, quit_text.get_rect(center=button_quit_rect.center))
+                            return None
 
             pygame.display.flip()
+        return None
 
-    def new(self):
+
+    def new(self, map_file):
         self.all_sprites = pygame.sprite.Group()
         self.items = pygame.sprite.Group()
         self.bars = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
 
         # === MAPA COM ARVORES/PAREDES E ITENS ===
-        self.game_map = Map("map.txt")
+        self.game_map = Map(map_file)
         self.solids = self.game_map.solids  # grupo de colisão
 
         # player nasce no spawn do mapa (fallback no próprio player se faltar)
@@ -107,6 +118,7 @@ class Game:
         self.bars_level = MAX_STAT_LEVEL
         self.playing = True
         self.result = None
+        self.start_time = time.time() # Inicia o timer
 
     def run(self):
         while self.playing:
@@ -114,10 +126,14 @@ class Game:
             self.events()
             self.update()
             self.draw()
+        
+        # Quando o loop de jogo (self.playing) termina, decide o que fazer a seguir
         if self.result == "lose":
-            self.death_screen()
-        else:
-            self.end_screen()
+            return self.death_screen() # Retorna a ação escolhida pelo usuário ("restart", "menu" ou "quit")
+        
+        # Se o jogo terminou por outro motivo (ex: ESC), volta ao menu
+        return "menu"
+
 
     def events(self):
         for event in pygame.event.get():
@@ -127,7 +143,6 @@ class Game:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.playing = False
-                    self.running = False
                 if event.key == pygame.K_1: self.enemy_move_speed -= 20
                 if event.key == pygame.K_2: self.enemy_move_speed += 20
                 if event.key == pygame.K_3: self.enemy_turn_speed -= 0.5
@@ -165,8 +180,14 @@ class Game:
 
         if self.enemy.sees(self.player, self.solids) and not self.result:
             self.result = "lose"; self.playing = False
+        
+        # Atualiza a pontuação baseada no tempo
+        if self.playing:
+            self.score = int(time.time() - self.start_time)
+
 
     def draw_hud(self):
+        # Barras de status
         BAR_LENGTH = 200; BAR_HEIGHT = 25
         folego_bar_x = 15; folego_bar_y = 15
         fill_width_folego = (self.cigs_level / MAX_STAT_LEVEL) * BAR_LENGTH
@@ -181,6 +202,12 @@ class Game:
         forca_text = self.font.render("Força", True, WHITE); self.screen.blit(forca_text, (forca_bar_x + 5, forca_bar_y + 4))
         tip = self.font.render("Fique nos itens para recuperar os status. Fuja do cone!", True, GRAY)
         self.screen.blit(tip, (12, 90))
+
+        # Timer
+        timer_text = self.timer_font.render(f"Tempo: {self.score}", True, WHITE)
+        timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH / 2, 30))
+        self.screen.blit(timer_text, timer_rect)
+
 
     def draw_status_animations(self):
         if self.is_smoking:
@@ -205,11 +232,10 @@ class Game:
             row = self.bar_anim_index // len(self.bar_frames[0])
             col = self.bar_anim_index % len(self.bar_frames[0])
             frame = self.bar_frames[row][col]
-            # Novo tamanho de exibição para manter a proporção de 461:240
             self.screen.blit(pygame.transform.smoothscale(frame, (150, 78)), (SCREEN_WIDTH - 165, 15))
 
     def draw(self):
-        self.game_map.draw(self.screen)  # fundo + tiles
+        self.game_map.draw(self.screen)
         self.all_sprites.draw(self.screen)
         self.enemy.draw_fov(self.screen)
         self.draw_hud()
@@ -221,6 +247,10 @@ class Game:
         title_surf = self.title_font.render("VOCÊ FOI PEGO!", True, RED)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
         self.screen.blit(title_surf, title_rect)
+
+        score_surf = self.font.render(f"Pontuação Final: {self.score}", True, WHITE)
+        score_rect = score_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 50))
+        self.screen.blit(score_surf, score_rect)
 
         button_restart_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
         button_menu_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
@@ -238,15 +268,10 @@ class Game:
                     if event.key == pygame.K_DOWN: selected_option = (selected_option + 1) % len(options)
                     elif event.key == pygame.K_UP: selected_option = (selected_option - 1) % len(options)
                     if event.key == pygame.K_RETURN:
-                        if selected_option == 0: # Recomeçar o jogo
-                            waiting_for_input = False
-                            self.new()
-                            self.run()
-                        else: # Voltar ao menu principal
-                            waiting_for_input = False
-                            self.show_menu_screen()
-                            self.new() # Reinicia o jogo para o estado inicial para o menu
-                            self.run()
+                        if selected_option == 0:
+                            return "restart"
+                        else:
+                            return "menu"
 
             restart_color = GREEN if selected_option == 0 else GRAY
             menu_color = RED if selected_option == 1 else GRAY
@@ -260,28 +285,8 @@ class Game:
             self.screen.blit(menu_text, menu_text.get_rect(center=button_menu_rect.center))
 
             pygame.display.flip()
-
-    def end_screen(self):
-        msg = "VOCÊ VENCEU!" if self.result == "win" else "VOCÊ PERDEU!"
-        sub = "Enter para jogar novamente | Esc para sair"
-        shade = GREEN if self.result == "win" else RED
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((0,0,0,180))
-        self.screen.blit(overlay, (0,0))
-        title = pygame.font.SysFont(None, 64).render(msg, True, shade)
-        rect = title.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 20))
-        self.screen.blit(title, rect)
-        subtx = self.font.render(sub, True, WHITE)
-        self.screen.blit(subtx, subtx.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 30)))
-        pygame.display.flip()
-        waiting = True
-        while waiting and self.running:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    waiting = False; self.running = False
-                if event.type == pygame.KEYDOWN:
-                    waiting = False
-            self.clock.tick(30)
+        
+        return "quit" # Se a janela for fechada
 
     def quit(self):
         pygame.quit(); sys.exit()
