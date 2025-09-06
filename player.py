@@ -2,31 +2,14 @@ import pygame
 from settings import *
 from utils import clamp
 
-def load_spritesheet_grid(path, fw, fh):
-    """Corta um spritesheet em grade fw×fh e retorna frames em [linhas][colunas]."""
-    sheet = pygame.image.load(path).convert_alpha()
-    sw, sh = sheet.get_size()
-    cols, rows = sw // fw, sh // fh
-    frames = []
-    for r in range(rows):
-        row = []
-        for c in range(cols):
-            rect = pygame.Rect(c*fw, r*fh, fw, fh)
-            row.append(sheet.subsurface(rect).copy())
-        frames.append(row)
-    return frames
-
 class Player(pygame.sprite.Sprite):
-    def __init__(self, game, x, y):
+    def __init__(self, game, x, y, animations): # Recebe as animações
         super().__init__()
         self.game = game
+        self.animations = animations # Armazena as animações
 
-        # Altura correta do corte (ajustada por você)
-        self.frames_grid = load_spritesheet_grid("assets/maleBase/full/advnt_full.png", 32, 64)
-
-        # Animações
-        self.idle_frames = [self.frames_grid[0][0]]
-        self.walk_frames = self.frames_grid[0][1:7]
+        self.idle_frames = self.animations["idle"]
+        self.walk_frames = self.animations["walk"]
 
         # escala
         self.SCALE = 2
