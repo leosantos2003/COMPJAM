@@ -21,7 +21,7 @@ TILE = 32
 PLAYER_SPEED = 300  # px/s
 
 # Inimigo (inspetor)
-ENEMY_SPEED = 160      # px/s
+ENEMY_SPEED = 120      # px/s
 FOV_DEGREES = 70       # ângulo do cone de visão
 FOV_RANGE   = 280      # alcance do cone de visão em pixels
 
@@ -36,3 +36,7 @@ ROUND_TIME = 60
 BAR_HOLD_SECONDS = 1.5   # tempo que o player precisa ficar sobre a barra p/ contar
 BAR_COOLDOWN     = 2.0   # segundos de cooldown após contar
 
+# IA do Inimigo
+ENEMY_RETARGET_SECONDS = 2  # Tempo em segundos para o inimigo recalcular a rota até o jogador
+
+ENEMY_TURN_SPEED = 2.5  # Velocidade de giro do inimigo (radianos/s). Valores maiores = giro mais rápido

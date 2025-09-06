@@ -1,10 +1,12 @@
+# game.py
 import pygame
 import sys
 from settings import *
 from player import Player
 from enemy import Enemy
 from items import Cigarette, PullUpBar
-from map import Map  # Importa a classe Map
+from map import Map
+from utils import clamp # Importar a função clamp
 
 class Game:
     def __init__(self):
@@ -17,44 +19,36 @@ class Game:
         self.font = pygame.font.SysFont(None, 28)
 
     def new(self):
-        # grupos
         self.all_sprites = pygame.sprite.Group()
         self.items = pygame.sprite.Group()
         self.bars = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
-
-        # Inicializa o mapa
-        self.game_map = Map() # Instancia a classe Map
-
-        # jogador
-        self.player = Player(self, 4, 5)  # posição em tiles
+        self.game_map = Map()
+        self.player = Player(self, 4, 5)
         self.all_sprites.add(self.player)
 
-        # coloca cigarros
-        cig_positions = [
-            (200, 120), (630, 210), (900, 520), (140, 600), (500, 350)
-        ]
+        # ... (código para criar cigarros e barras continua o mesmo) ...
+        cig_positions = [(200, 120), (630, 210), (900, 520), (140, 600), (500, 350)]
         for pos in cig_positions:
             c = Cigarette(*pos)
             self.items.add(c); self.all_sprites.add(c)
-
-        # barras fixas (não somem)
         bar_positions = [(320, 640), (780, 150), (820, 380)]
         for pos in bar_positions:
             b = PullUpBar(*pos)
             self.bars.add(b); self.all_sprites.add(b)
-
-        # inimigo agora persegue o jogador
-        # patrol = [(150,150), (900,150), (900,650), (150,650)] # Linha removida
-        self.enemy = Enemy(800, 400) # Cria o inimigo em uma posição inicial (x, y)
+        
+        self.enemy = Enemy(800, 400)
         self.enemies.add(self.enemy); self.all_sprites.add(self.enemy)
 
-        # objetivos e estado
+        # VARIÁVEIS DE CONTROLE DE DIFICULDADE
+        self.enemy_move_speed = ENEMY_SPEED
+        self.enemy_turn_speed = ENEMY_TURN_SPEED
+
         self.cigs_collected = 0
         self.bars_done = 0
         self.time_left = ROUND_TIME
         self.playing = True
-        self.result = None  # "win" | "lose" | None
+        self.result = None
 
     def run(self):
         while self.playing:
@@ -62,7 +56,6 @@ class Game:
             self.events()
             self.update()
             self.draw()
-        # tela de fim rápida
         self.end_screen()
 
     def events(self):
@@ -70,57 +63,68 @@ class Game:
             if event.type == pygame.QUIT:
                 self.playing = False
                 self.running = False
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                self.playing = False
-                self.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.playing = False
+                    self.running = False
+                
+                # NOVOS CONTROLES DE DIFICULDADE
+                # Altera velocidade de movimento
+                if event.key == pygame.K_1:
+                    self.enemy_move_speed -= 20
+                if event.key == pygame.K_2:
+                    self.enemy_move_speed += 20
+                # Altera velocidade de giro
+                if event.key == pygame.K_3:
+                    self.enemy_turn_speed -= 0.5
+                if event.key == pygame.K_4:
+                    self.enemy_turn_speed += 0.5
+                
+                # Garante que os valores não fiquem negativos ou excessivamente baixos
+                self.enemy_move_speed = clamp(self.enemy_move_speed, 40, 500)
+                self.enemy_turn_speed = clamp(self.enemy_turn_speed, 1.0, 10.0)
 
     def update(self):
-        # contagem regressiva
         self.time_left -= self.dt
         if self.time_left <= 0 and not self.result:
             self.result = "lose"
             self.playing = False
 
-        # atualiza sprites (passando dt)
-        # self.all_sprites.update(self.dt)
+        # ATUALIZA AS VARIÁVEIS DO INIMIGO COM OS VALORES DO JOGO
+        self.enemy.move_speed = self.enemy_move_speed
+        self.enemy.turn_speed = self.enemy_turn_speed
 
-        # Atualiza os sprites individualmente ou por grupos que não precisam de argumentos extras
         self.player.update(self.dt)
         self.items.update(self.dt)
         self.bars.update(self.dt)
-        self.enemy.update(self.dt, self.player) # Passa o jogador para o inimigo
+        self.enemy.update(self.dt, self.player)
 
-        # coleta de cigarros (pickup instantâneo)
+        # ... (resto da lógica de update continua o mesmo) ...
         got = pygame.sprite.spritecollide(self.player, self.items, dokill=True)
         if got:
             self.cigs_collected += len(got)
 
-        # usar barra: precisa ficar parado em cima por BAR_HOLD_SECONDS
         colliding = pygame.sprite.spritecollide(self.player, self.bars, dokill=False)
         for bar in self.bars:
             if bar in colliding and bar.cooldown_timer <= 0:
                 bar.hold += self.dt
                 if bar.hold >= bar.hold_needed:
                     self.bars_done += 1
-                    bar.on_count()   # ativa cooldown e reseta hold
+                    bar.on_count()
             else:
-                # saiu da área da barra ou está em cooldown -> zera progresso
                 if bar.cooldown_timer <= 0:
                     bar.hold = 0.0
 
-        # visão do inimigo -> derrota
         if self.enemy.sees(self.player) and not self.result:
             self.result = "lose"
             self.playing = False
 
-        # vitória?
-        if (self.cigs_collected >= NEEDED_CIGS and
-            self.bars_done >= NEEDED_BARS and not self.result):
+        if (self.cigs_collected >= NEEDED_CIGS and self.bars_done >= NEEDED_BARS and not self.result):
             self.result = "win"
             self.playing = False
 
+    # ... (função draw_bar_progress continua a mesma) ...
     def draw_bar_progress(self, bar):
-        # desenha uma barra de progresso acima da PullUpBar
         r = bar.rect
         w = TILE
         h = 6
@@ -132,29 +136,32 @@ class Game:
         pygame.draw.rect(self.screen, (220, 220, 220), (x, y, w, h), 1)
 
     def draw_hud(self):
+        # Texto principal do HUD
         txt = f"Cigarros: {self.cigs_collected}/{NEEDED_CIGS}  |  Barras: {self.bars_done}/{NEEDED_BARS}  |  Tempo: {int(self.time_left)}"
         surf = self.font.render(txt, True, WHITE)
         self.screen.blit(surf, (12, 10))
-        tip = self.font.render("Controles: WASD/Setas. Fique na barra para encher o medidor. Fuja do cone!", True, GRAY)
-        self.screen.blit(tip, (12, 40))
+        
+        # NOVO TEXTO PARA DIFICULDADE
+        # Usamos :.1f para formatar o número com 1 casa decimal
+        diff_txt = f"Dificuldade [Teclas 1-4]: Velocidade {self.enemy_move_speed} | Giro {self.enemy_turn_speed:.1f}"
+        diff_surf = self.font.render(diff_txt, True, CYAN)
+        # Posiciona abaixo da dica dos controles
+        tip_rect = self.screen.blit(self.font.render("Controles: WASD/Setas.", True, GRAY), (12, 40))
+        self.screen.blit(diff_surf, (12, tip_rect.bottom + 5))
+
 
     def draw(self):
         self.screen.fill((20, 20, 30))
-        # Desenha o mapa
         self.game_map.draw(self.screen)
-
         self.all_sprites.draw(self.screen)
-        # desenha cone do inimigo
         self.enemy.draw_fov(self.screen)
-
-        # desenha progresso nas barras quando o player está em cima e sem cooldown
         for bar in self.bars:
             if bar.cooldown_timer <= 0 and bar.hold > 0:
                 self.draw_bar_progress(bar)
-
         self.draw_hud()
         pygame.display.flip()
 
+    # ... (funções end_screen e quit continuam as mesmas) ...
     def end_screen(self):
         msg = "VOCÊ VENCEU!" if self.result == "win" else "VOCÊ PERDEU!"
         sub = "Enter para jogar novamente | Esc para sair"
@@ -184,4 +191,3 @@ class Game:
     def quit(self):
         pygame.quit()
         sys.exit()
-
