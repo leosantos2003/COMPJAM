@@ -27,7 +27,7 @@ class Enemy(pygame.sprite.Sprite):
       - 'search'       : perdeu o jogador; vasculha ao redor do último visto
       - 'chase'        : vendo o jogador (LOS + FOV); persegue com predição
     """
-    def __init__(self, x, y):
+    def __init__(self, x, y, difficulty=None):
         super().__init__()
         # Carrega a imagem do inspetor e a redimensiona
         # Supondo que a imagem se chame 'geralzao.png' e esteja na pasta 'assets'
@@ -45,8 +45,22 @@ class Enemy(pygame.sprite.Sprite):
         # movimento
         self.dir = pygame.math.Vector2(1, 0)
         self.vel = pygame.math.Vector2(0, 0)
-        self.move_speed = ENEMY_SPEED
-        self.turn_speed = ENEMY_TURN_SPEED
+
+        # Carrega as configurações de dificuldade ou usa os padrões
+        if difficulty is None:
+            difficulty = DIFFICULTY_LEVELS["Normal"] # Fallback
+
+        self.move_speed = difficulty["ENEMY_SPEED"]
+        self.turn_speed = difficulty["ENEMY_TURN_SPEED"]
+        self.FOV_DEGREES = difficulty["FOV_DEGREES"]
+        self.FOV_RANGE = difficulty["FOV_RANGE"]
+        self.HEARING_BASE = difficulty["ENEMY_HEARING_BASE"]
+        self.HEARING_RUN = difficulty["ENEMY_HEARING_RUN"]
+        self.LEAD_TIME = difficulty["ENEMY_LEAD_TIME"]
+        self.SEARCH_TIME = difficulty["ENEMY_SEARCH_TIME"]
+        self.SEARCH_RADIUS_TILES = difficulty["ENEMY_SEARCH_RADIUS_TILES"]
+        self.PATH_RECALC_EVERY = difficulty["ENEMY_PATH_RECALC"]
+        self.FEELER = difficulty["ENEMY_FEELER_LEN"]
 
         # alvo atual em pixels
         self.target_pos = pygame.math.Vector2(self.rect.center)
@@ -74,16 +88,9 @@ class Enemy(pygame.sprite.Sprite):
         self._patrol_points = []
         self._current_patrol_idx = 0
 
-        # tunables (default caso não existam no settings)
-        self.HEARING_BASE = globals().get('ENEMY_HEARING_BASE', 220)
-        self.HEARING_RUN  = globals().get('ENEMY_HEARING_RUN', 340)
-        self.LEAD_TIME    = globals().get('ENEMY_LEAD_TIME', 0.35)
-        self.SEARCH_TIME  = globals().get('ENEMY_SEARCH_TIME', 6.0)
-        self.SEARCH_RADIUS_TILES = globals().get('ENEMY_SEARCH_RADIUS_TILES', 6)
+        # tunables
         self.PATROL_PAUSE_MINMAX = globals().get('ENEMY_PATROL_PAUSE_MINMAX', (0.5, 1.2))
-        self.PATH_RECALC_EVERY = globals().get('ENEMY_PATH_RECALC', 0.35)
         self.WAYPOINT_EPS = TILE * 0.25
-        self.FEELER = globals().get('ENEMY_FEELER_LEN', 18)
 
     # ---------------- PATHFINDING ----------------
     def _blocked(self, tx, ty, game_map):
@@ -192,12 +199,12 @@ class Enemy(pygame.sprite.Sprite):
             return False
         to_player = pygame.math.Vector2(player.rect.center) - pygame.math.Vector2(self.rect.center)
         dist = to_player.length()
-        if dist > FOV_RANGE or dist == 0:
+        if dist > self.FOV_RANGE or dist == 0:
             return False
         to_player_n = to_player.normalize()
         dot = self.dir.dot(to_player_n)
         angle = math.degrees(math.acos(clamp(dot, -1, 1)))
-        return angle <= FOV_DEGREES / 2
+        return angle <= self.FOV_DEGREES / 2
 
     def hears(self, player):
         # barulho proporcional à velocidade
@@ -430,9 +437,9 @@ class Enemy(pygame.sprite.Sprite):
     def draw_fov(self, surface):
         origin = pygame.math.Vector2(self.rect.center)
         base_angle = math.degrees(math.atan2(self.dir.y, self.dir.x))
-        left_a  = math.radians(base_angle - FOV_DEGREES/2)
-        right_a = math.radians(base_angle + FOV_DEGREES/2)
-        left_vec  = (math.cos(left_a)*FOV_RANGE,  math.sin(left_a)*FOV_RANGE)
-        right_vec = (math.cos(right_a)*FOV_RANGE, math.sin(right_a)*FOV_RANGE)
+        left_a  = math.radians(base_angle - self.FOV_DEGREES/2)
+        right_a = math.radians(base_angle + self.FOV_DEGREES/2)
+        left_vec  = (math.cos(left_a)*self.FOV_RANGE,  math.sin(left_a)*self.FOV_RANGE)
+        right_vec = (math.cos(right_a)*self.FOV_RANGE, math.sin(right_a)*self.FOV_RANGE)
         pts = [origin, origin + left_vec, origin + right_vec]
         pygame.draw.polygon(surface, (255, 100, 100), pts, width=2)

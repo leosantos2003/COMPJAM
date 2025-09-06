@@ -46,6 +46,7 @@ class Game:
         self.maps = ["map.txt", "map2.txt", "map3.txt"]
         self.score = 0
         self.start_time = 0
+        self.difficulty = "Normal" # Dificuldade padrão
 
     def show_menu_screen(self):
         self.screen.fill(BLACK)
@@ -54,7 +55,7 @@ class Game:
         self.screen.blit(title_surf, title_rect)
 
         # Opções do menu
-        options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Sair"]
+        options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Dificuldade", "Sair"]
         selected_option = 0
 
         waiting_for_input = True
@@ -63,7 +64,7 @@ class Game:
 
             # Desenha as opções
             for i, option in enumerate(options):
-                rect = pygame.Rect(SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 50 + i * 70, 300, 50)
+                rect = pygame.Rect(SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 80 + i * 60, 300, 50)
                 
                 is_quit_option = (option == "Sair")
                 
@@ -73,7 +74,13 @@ class Game:
                     color = GRAY
 
                 pygame.draw.rect(self.screen, color, rect)
-                text_surf = self.font.render(option, True, BLACK)
+
+                if option == "Dificuldade":
+                    text_to_render = f"Dificuldade: {self.difficulty}"
+                else:
+                    text_to_render = option
+                
+                text_surf = self.font.render(text_to_render, True, BLACK)
                 text_rect = text_surf.get_rect(center=rect.center)
                 self.screen.blit(text_surf, text_rect)
 
@@ -82,26 +89,32 @@ class Game:
                 if event.type == pygame.QUIT:
                     waiting_for_input = False
                     self.running = False
-                    return None
+                    return None, None
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_DOWN:
                         selected_option = (selected_option + 1) % len(options)
                     elif event.key == pygame.K_UP:
                         selected_option = (selected_option - 1) % len(options)
                     if event.key == pygame.K_RETURN:
-                        if selected_option < len(self.maps): # Opções de mapa
+                        if selected_option < 3: # Opções de mapa
                             waiting_for_input = False
-                            return self.maps[selected_option]
+                            return self.maps[selected_option], self.difficulty
+                        elif options[selected_option] == "Dificuldade":
+                            # Cicla entre as dificuldades
+                            difficulty_levels = list(DIFFICULTY_LEVELS.keys())
+                            current_index = difficulty_levels.index(self.difficulty)
+                            next_index = (current_index + 1) % len(difficulty_levels)
+                            self.difficulty = difficulty_levels[next_index]
                         else: # Sair
                             waiting_for_input = False
                             self.running = False
-                            return None
+                            return None, None
 
             pygame.display.flip()
-        return None
+        return None, None
 
 
-    def new(self, map_file):
+    def new(self, map_file, difficulty):
         self.all_sprites = pygame.sprite.Group()
         self.items = pygame.sprite.Group()
         self.bars = pygame.sprite.Group()
@@ -123,11 +136,11 @@ class Game:
             b = PullUpBar(*pos)
             self.bars.add(b); self.all_sprites.add(b)
 
-        self.enemy = Enemy(800, 400)
+        # Usa as configurações de dificuldade para criar o inimigo
+        enemy_settings = DIFFICULTY_LEVELS[difficulty]
+        self.enemy = Enemy(800, 400, difficulty=enemy_settings)
         self.enemies.add(self.enemy); self.all_sprites.add(self.enemy)
 
-        self.enemy_move_speed = ENEMY_SPEED
-        self.enemy_turn_speed = ENEMY_TURN_SPEED
         self.cigs_level = MAX_STAT_LEVEL
         self.bars_level = MAX_STAT_LEVEL
         self.playing = True
@@ -157,12 +170,6 @@ class Game:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.playing = False
-                if event.key == pygame.K_1: self.enemy_move_speed -= 20
-                if event.key == pygame.K_2: self.enemy_move_speed += 20
-                if event.key == pygame.K_3: self.enemy_turn_speed -= 0.5
-                if event.key == pygame.K_4: self.enemy_turn_speed += 0.5
-                self.enemy_move_speed = clamp(self.enemy_move_speed, 40, 500)
-                self.enemy_turn_speed = clamp(self.enemy_turn_speed, 1.0, 10.0)
 
     def update(self):
         self.cigs_level -= CIGS_DECAY_RATE * self.dt
@@ -171,8 +178,6 @@ class Game:
             self.result = "lose"; self.playing = False
 
         self.player.update(self.dt, self.solids)
-        self.enemy.move_speed = self.enemy_move_speed
-        self.enemy.turn_speed = self.enemy_turn_speed
         self.enemy.update(self.dt, self.player, self.solids, self.game_map)
 
         was_smoking = self.is_smoking
