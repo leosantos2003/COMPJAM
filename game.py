@@ -260,7 +260,7 @@ class Game:
 
         # 2. Se houver um texto para mostrar, desenha a legenda
         if texto_legenda_jogador:
-            cor_legenda_jogador = GREEN  # Uma cor diferente para destacar a ação
+            cor_legenda_jogador = WHITE  # Uma cor diferente para destacar a ação
             legenda_surface_jogador = self.font.render(texto_legenda_jogador, True, cor_legenda_jogador)
             legenda_rect_jogador = legenda_surface_jogador.get_rect()
             
