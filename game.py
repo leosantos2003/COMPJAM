@@ -23,9 +23,10 @@ class Game:
         self.font = pygame.font.SysFont(None, 28)
         self.title_font = pygame.font.SysFont(None, 80)
 
-        # Carregar animações de status
-        self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 274, 216)
-        self.bar_frames = load_spritesheet_grid("assets/bar.png", 274, 216)
+        # Carregar animações de status com as dimensões corretas
+        self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427, 240)
+        # CORREÇÃO FINAL COM AS SUAS DIMENSÕES: 461x240
+        self.bar_frames = load_spritesheet_grid("assets/bar.png", 461, 240)
         self.is_smoking = False
         self.is_doing_pullups = False
         self.smoke_anim_index = 0
@@ -186,23 +187,26 @@ class Game:
             self.smoke_anim_timer += self.dt
             if self.smoke_anim_timer > self.anim_speed:
                 self.smoke_anim_timer = 0
-                self.smoke_anim_index = (self.smoke_anim_index + 1) % (len(self.smoke_frames) * len(self.smoke_frames[0]))
+                total_smoke_frames = len(self.smoke_frames) * len(self.smoke_frames[0])
+                self.smoke_anim_index = (self.smoke_anim_index + 1) % total_smoke_frames
 
             row = self.smoke_anim_index // len(self.smoke_frames[0])
             col = self.smoke_anim_index % len(self.smoke_frames[0])
             frame = self.smoke_frames[row][col]
-            self.screen.blit(pygame.transform.smoothscale(frame, (137, 108)), (SCREEN_WIDTH - 150, 15))
+            self.screen.blit(pygame.transform.smoothscale(frame, (150, 84)), (SCREEN_WIDTH - 165, 15))
 
         if self.is_doing_pullups:
             self.bar_anim_timer += self.dt
             if self.bar_anim_timer > self.anim_speed:
                 self.bar_anim_timer = 0
-                self.bar_anim_index = (self.bar_anim_index + 1) % (len(self.bar_frames) * len(self.bar_frames[0]))
+                total_bar_frames = len(self.bar_frames) * len(self.bar_frames[0])
+                self.bar_anim_index = (self.bar_anim_index + 1) % total_bar_frames
 
             row = self.bar_anim_index // len(self.bar_frames[0])
             col = self.bar_anim_index % len(self.bar_frames[0])
             frame = self.bar_frames[row][col]
-            self.screen.blit(pygame.transform.smoothscale(frame, (137, 108)), (SCREEN_WIDTH - 150, 15))
+            # Novo tamanho de exibição para manter a proporção de 461:240
+            self.screen.blit(pygame.transform.smoothscale(frame, (150, 78)), (SCREEN_WIDTH - 165, 15))
 
     def draw(self):
         self.game_map.draw(self.screen)  # fundo + tiles
