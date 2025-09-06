@@ -1,9 +1,11 @@
+# settings.py RESOLVIDO
+
 # Configurações da tela
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 FULLSCREEN = True  # Mude para False para jogar em modo janela
 FPS = 60
-TITLE = "A Ronda do Inspetor"
+TITLE = "Grand Theft Auto V: INF Version"
 
 # Cores
 BLACK = (0, 0, 0)
@@ -17,6 +19,10 @@ CYAN  = (0, 200, 200)
 
 # Grid / sprites
 TILE = 32
+
+# HUD
+BAR_LENGTH = 200
+BAR_HEIGHT = 25
 
 # Jogador
 PLAYER_SPEED = 300  # px/s
