@@ -26,7 +26,7 @@ class Game:
         self.timer_font = pygame.font.SysFont(None, 40)
 
         # Carregar animações de status com as dimensões corretas
-        self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427, 240)
+        self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427*2, 240*2)
         self.bar_frames = load_spritesheet_grid("assets/bar.png", 461, 240)
         self.is_smoking = False
         self.is_doing_pullups = False
@@ -187,21 +187,29 @@ class Game:
 
 
     def draw_hud(self):
-        # Barras de status
         BAR_LENGTH = 200; BAR_HEIGHT = 25
+        
+        # Barra de Fôlego (sem alterações)
         folego_bar_x = 15; folego_bar_y = 15
         fill_width_folego = (self.cigs_level / MAX_STAT_LEVEL) * BAR_LENGTH
         pygame.draw.rect(self.screen, GRAY, pygame.Rect(folego_bar_x, folego_bar_y, BAR_LENGTH, BAR_HEIGHT))
-        pygame.draw.rect(self.screen, YELLOW, pygame.Rect(folego_bar_x, folego_bar_y, fill_width_folego, BAR_HEIGHT))
-        folego_text = self.font.render("Fôlego", True, WHITE); self.screen.blit(folego_text, (folego_bar_x + 5, folego_bar_y + 4))
+        pygame.draw.rect(self.screen, RED, pygame.Rect(folego_bar_x, folego_bar_y, fill_width_folego, BAR_HEIGHT))
+        folego_text = self.font.render("Fume bastante!", True, WHITE); self.screen.blit(folego_text, (folego_bar_x + 5, folego_bar_y + 4))
 
-        forca_bar_x = 15; forca_bar_y = 50
+        # --- ALTERAÇÃO AQUI ---
+        # Barra de Força (posição ajustada para ficar ao lado da de Fôlego)
+        gap_entre_barras = 10
+        forca_bar_x = folego_bar_x + BAR_LENGTH + gap_entre_barras # Nova posição X
+        forca_bar_y = folego_bar_y # Mesma posição Y da barra de Fôlego
+
         fill_width_forca = (self.bars_level / MAX_STAT_LEVEL) * BAR_LENGTH
         pygame.draw.rect(self.screen, GRAY, pygame.Rect(forca_bar_x, forca_bar_y, BAR_LENGTH, BAR_HEIGHT))
         pygame.draw.rect(self.screen, CYAN, pygame.Rect(forca_bar_x, forca_bar_y, fill_width_forca, BAR_HEIGHT))
-        forca_text = self.font.render("Força", True, WHITE); self.screen.blit(forca_text, (forca_bar_x + 5, forca_bar_y + 4))
-        tip = self.font.render("Fique nos itens para recuperar os status. Fuja do cone!", True, GRAY)
-        self.screen.blit(tip, (12, 90))
+        forca_text = self.font.render("Faça mais barras!", True, WHITE); self.screen.blit(forca_text, (forca_bar_x + 5, forca_bar_y + 4))
+        
+        # Posição da dica ajustada para não sobrepor as barras
+        # tip = self.font.render("Fique nos itens para recuperar os status. Fuja do cone!", True, GRAY)
+        # self.screen.blit(tip, (12, folego_bar_y + BAR_HEIGHT + 10))
 
         # Timer
         timer_text = self.timer_font.render(f"Tempo: {self.score}", True, WHITE)
