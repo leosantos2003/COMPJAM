@@ -313,8 +313,20 @@ class Game:
 
     def show_menu_screen(self):
         self.screen.fill(BLACK)
-        title_surf = self.title_font.render(TITLE, True, WHITE)
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 4))
+        
+        # --- ALTERAÇÃO PARA O TÍTULO COLORIDO ---
+        title_part1 = "Grand Theft Auto V: "
+        title_part2 = "INF Version"
+        
+        title1_surf = self.title_font.render(title_part1, True, WHITE)
+        title2_surf = self.title_font.render(title_part2, True, YELLOW)
+        
+        total_width = title1_surf.get_width() + title2_surf.get_width()
+        start_x = (SCREEN_WIDTH - total_width) / 2
+        
+        title1_rect = title1_surf.get_rect(x=start_x, centery=SCREEN_HEIGHT / 4)
+        title2_rect = title2_surf.get_rect(x=title1_rect.right, centery=SCREEN_HEIGHT / 4)
+        # --- FIM DA ALTERAÇÃO ---
         
         options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Dificuldade", "Leaderboard", "Sair"]
         selected_option = 0
@@ -322,8 +334,12 @@ class Game:
         waiting_for_input = True
         while waiting_for_input:
             self.clock.tick(FPS)
-            self.screen.fill(OXFORDBLUE) #*************************
-            self.screen.blit(title_surf, title_rect)
+            self.screen.fill(OXFORDBLUE)
+            
+            # --- ALTERAÇÃO PARA DESENHAR O TÍTULO EM DUAS PARTES ---
+            self.screen.blit(title1_surf, title1_rect)
+            self.screen.blit(title2_surf, title2_rect)
+            # --------------------------------------------------------
 
             self._draw_menu_options(options, selected_option, start_y=SCREEN_HEIGHT / 2)
 
