@@ -5,7 +5,7 @@ from player import Player
 from enemy import Enemy
 from items import Cigarette, PullUpBar
 from map import Map
-from utils import clamp
+from utils import clamp, load_spritesheet_grid
 
 class Game:
     def __init__(self):
@@ -15,7 +15,7 @@ class Game:
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
         else:
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
-            
+
         pygame.display.set_caption(TITLE)
         self.clock = pygame.time.Clock()
         self.running = True
@@ -23,16 +23,28 @@ class Game:
         self.font = pygame.font.SysFont(None, 28)
         self.title_font = pygame.font.SysFont(None, 80)
 
+        # Carregar animações de status com as dimensões corretas
+        self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427, 240)
+        # CORREÇÃO FINAL COM AS SUAS DIMENSÕES: 461x240
+        self.bar_frames = load_spritesheet_grid("assets/bar.png", 461, 240)
+        self.is_smoking = False
+        self.is_doing_pullups = False
+        self.smoke_anim_index = 0
+        self.bar_anim_index = 0
+        self.smoke_anim_timer = 0
+        self.bar_anim_timer = 0
+        self.anim_speed = 0.1
+
     def show_menu_screen(self):
         self.screen.fill(BLACK)
         title_surf = self.title_font.render(TITLE, True, WHITE)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
         self.screen.blit(title_surf, title_rect)
-        
+
         # Ajustando a posição dos botões para serem reutilizáveis
         button_play_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
         button_quit_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
-        
+
         selected_option = 0
         options = ["Jogar", "Sair"]
         waiting_for_input = True
@@ -50,18 +62,18 @@ class Game:
                         else: # Sai do jogo
                             waiting_for_input = False
                             self.running = False
-            
+
             play_color = GREEN if selected_option == 0 else GRAY
             quit_color = RED if selected_option == 1 else GRAY
-            
+
             pygame.draw.rect(self.screen, play_color, button_play_rect)
             play_text = self.font.render("Jogar", True, BLACK)
             self.screen.blit(play_text, play_text.get_rect(center=button_play_rect.center))
-            
+
             pygame.draw.rect(self.screen, quit_color, button_quit_rect)
             quit_text = self.font.render("Sair", True, BLACK)
             self.screen.blit(quit_text, quit_text.get_rect(center=button_quit_rect.center))
-            
+
             pygame.display.flip()
 
     def new(self):
@@ -136,10 +148,18 @@ class Game:
         self.enemy.turn_speed = self.enemy_turn_speed
         self.enemy.update(self.dt, self.player, self.solids, self.game_map)
 
+        self.is_smoking = False
         cig_collisions = pygame.sprite.spritecollide(self.player, self.items, dokill=False)
-        if cig_collisions: self.cigs_level += CIGS_RECHARGE_RATE * self.dt
+        if cig_collisions:
+            self.cigs_level += CIGS_RECHARGE_RATE * self.dt
+            self.is_smoking = True
+
+        self.is_doing_pullups = False
         bar_collisions = pygame.sprite.spritecollide(self.player, self.bars, dokill=False)
-        if bar_collisions: self.bars_level += BARS_RECHARGE_RATE * self.dt
+        if bar_collisions:
+            self.bars_level += BARS_RECHARGE_RATE * self.dt
+            self.is_doing_pullups = True
+
         self.cigs_level = clamp(self.cigs_level, 0, MAX_STAT_LEVEL)
         self.bars_level = clamp(self.bars_level, 0, MAX_STAT_LEVEL)
 
@@ -162,11 +182,38 @@ class Game:
         tip = self.font.render("Fique nos itens para recuperar os status. Fuja do cone!", True, GRAY)
         self.screen.blit(tip, (12, 90))
 
+    def draw_status_animations(self):
+        if self.is_smoking:
+            self.smoke_anim_timer += self.dt
+            if self.smoke_anim_timer > self.anim_speed:
+                self.smoke_anim_timer = 0
+                total_smoke_frames = len(self.smoke_frames) * len(self.smoke_frames[0])
+                self.smoke_anim_index = (self.smoke_anim_index + 1) % total_smoke_frames
+
+            row = self.smoke_anim_index // len(self.smoke_frames[0])
+            col = self.smoke_anim_index % len(self.smoke_frames[0])
+            frame = self.smoke_frames[row][col]
+            self.screen.blit(pygame.transform.smoothscale(frame, (150, 84)), (SCREEN_WIDTH - 165, 15))
+
+        if self.is_doing_pullups:
+            self.bar_anim_timer += self.dt
+            if self.bar_anim_timer > self.anim_speed:
+                self.bar_anim_timer = 0
+                total_bar_frames = len(self.bar_frames) * len(self.bar_frames[0])
+                self.bar_anim_index = (self.bar_anim_index + 1) % total_bar_frames
+
+            row = self.bar_anim_index // len(self.bar_frames[0])
+            col = self.bar_anim_index % len(self.bar_frames[0])
+            frame = self.bar_frames[row][col]
+            # Novo tamanho de exibição para manter a proporção de 461:240
+            self.screen.blit(pygame.transform.smoothscale(frame, (150, 78)), (SCREEN_WIDTH - 165, 15))
+
     def draw(self):
         self.game_map.draw(self.screen)  # fundo + tiles
         self.all_sprites.draw(self.screen)
         self.enemy.draw_fov(self.screen)
         self.draw_hud()
+        self.draw_status_animations()
         pygame.display.flip()
 
     def death_screen(self):
@@ -174,10 +221,10 @@ class Game:
         title_surf = self.title_font.render("VOCÊ FOI PEGO!", True, RED)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
         self.screen.blit(title_surf, title_rect)
-        
+
         button_restart_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
         button_menu_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
-        
+
         selected_option = 0
         options = ["Recomeçar", "Voltar ao Menu"]
         waiting_for_input = True
@@ -200,18 +247,18 @@ class Game:
                             self.show_menu_screen()
                             self.new() # Reinicia o jogo para o estado inicial para o menu
                             self.run()
-            
+
             restart_color = GREEN if selected_option == 0 else GRAY
             menu_color = RED if selected_option == 1 else GRAY
-            
+
             pygame.draw.rect(self.screen, restart_color, button_restart_rect)
             restart_text = self.font.render("Recomeçar", True, BLACK)
             self.screen.blit(restart_text, restart_text.get_rect(center=button_restart_rect.center))
-            
+
             pygame.draw.rect(self.screen, menu_color, button_menu_rect)
             menu_text = self.font.render("Voltar ao Menu", True, BLACK)
             self.screen.blit(menu_text, menu_text.get_rect(center=button_menu_rect.center))
-            
+
             pygame.display.flip()
 
     def end_screen(self):
