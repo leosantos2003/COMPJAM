@@ -1,6 +1,7 @@
 import pygame
 import sys
 import time
+import random
 from settings import *
 from player import Player
 from enemy import Enemy
@@ -36,6 +37,12 @@ class Game:
         self.bar_anim_timer = 0
         self.anim_speed = 0.1
 
+        # Aura Troll Face
+        self.aura_image = pygame.image.load("assets/auratrollface.png").convert_alpha()
+        self.aura_active = False
+        self.aura_timer = 0
+        self.aura_duration = 1.0 # Duração em segundos
+
         self.maps = ["map.txt", "map2.txt", "map3.txt"]
         self.score = 0
         self.start_time = 0
@@ -58,7 +65,6 @@ class Game:
             for i, option in enumerate(options):
                 rect = pygame.Rect(SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 50 + i * 70, 300, 50)
                 
-                # --- LÓGICA DE COR ATUALIZADA ---
                 is_quit_option = (option == "Sair")
                 
                 if i == selected_option:
@@ -164,12 +170,13 @@ class Game:
         if (self.cigs_level <= 0 or self.bars_level <= 0) and not self.result:
             self.result = "lose"; self.playing = False
 
-        # passa colisões
         self.player.update(self.dt, self.solids)
-        # aplica as variáveis de dificuldade no inimigo e atualiza com colisão
         self.enemy.move_speed = self.enemy_move_speed
         self.enemy.turn_speed = self.enemy_turn_speed
         self.enemy.update(self.dt, self.player, self.solids, self.game_map)
+
+        was_smoking = self.is_smoking
+        was_doing_pullups = self.is_doing_pullups
 
         self.is_smoking = False
         cig_collisions = pygame.sprite.spritecollide(self.player, self.items, dokill=False)
@@ -182,6 +189,19 @@ class Game:
         if bar_collisions:
             self.bars_level += BARS_RECHARGE_RATE * self.dt
             self.is_doing_pullups = True
+
+        just_started_smoking = self.is_smoking and not was_smoking
+        just_started_pullups = self.is_doing_pullups and not was_doing_pullups
+
+        if just_started_smoking or just_started_pullups:
+            if not self.aura_active and random.randint(1, 14) == 1:
+                self.aura_active = True
+                self.aura_timer = self.aura_duration
+
+        if self.aura_active:
+            self.aura_timer -= self.dt
+            if self.aura_timer <= 0:
+                self.aura_active = False
 
         self.cigs_level = clamp(self.cigs_level, 0, MAX_STAT_LEVEL)
         self.bars_level = clamp(self.bars_level, 0, MAX_STAT_LEVEL)
@@ -197,29 +217,21 @@ class Game:
     def draw_hud(self):
         BAR_LENGTH = 200; BAR_HEIGHT = 25
         
-        # Barra de Fôlego (sem alterações)
         folego_bar_x = 15; folego_bar_y = 15
         fill_width_folego = (self.cigs_level / MAX_STAT_LEVEL) * BAR_LENGTH
         pygame.draw.rect(self.screen, GRAY, pygame.Rect(folego_bar_x, folego_bar_y, BAR_LENGTH, BAR_HEIGHT))
         pygame.draw.rect(self.screen, RED, pygame.Rect(folego_bar_x, folego_bar_y, fill_width_folego, BAR_HEIGHT))
         folego_text = self.font.render("Fume bastante!", True, WHITE); self.screen.blit(folego_text, (folego_bar_x + 5, folego_bar_y + 4))
 
-        # --- ALTERAÇÃO AQUI ---
-        # Barra de Força (posição ajustada para ficar ao lado da de Fôlego)
         gap_entre_barras = 10
-        forca_bar_x = folego_bar_x + BAR_LENGTH + gap_entre_barras # Nova posição X
-        forca_bar_y = folego_bar_y # Mesma posição Y da barra de Fôlego
+        forca_bar_x = folego_bar_x + BAR_LENGTH + gap_entre_barras
+        forca_bar_y = folego_bar_y
 
         fill_width_forca = (self.bars_level / MAX_STAT_LEVEL) * BAR_LENGTH
         pygame.draw.rect(self.screen, GRAY, pygame.Rect(forca_bar_x, forca_bar_y, BAR_LENGTH, BAR_HEIGHT))
         pygame.draw.rect(self.screen, CYAN, pygame.Rect(forca_bar_x, forca_bar_y, fill_width_forca, BAR_HEIGHT))
         forca_text = self.font.render("Faça mais barras!", True, WHITE); self.screen.blit(forca_text, (forca_bar_x + 5, forca_bar_y + 4))
         
-        # Posição da dica ajustada para não sobrepor as barras
-        # tip = self.font.render("Fique nos itens para recuperar os status. Fuja do cone!", True, GRAY)
-        # self.screen.blit(tip, (12, folego_bar_y + BAR_HEIGHT + 10))
-
-        # Timer
         timer_text = self.timer_font.render(f"Tempo: {self.score}", True, WHITE)
         timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH / 2, 30))
         self.screen.blit(timer_text, timer_rect)
@@ -257,7 +269,6 @@ class Game:
         self.draw_hud()
         self.draw_status_animations()
 
-        # --- CÓDIGO DA LEGENDA DO INSPETOR (já existente) ---
         texto_legenda_inimigo = self.enemy.name
         cor_legenda_inimigo = WHITE
         legenda_surface_inimigo = self.font.render(texto_legenda_inimigo, True, cor_legenda_inimigo)
@@ -265,39 +276,43 @@ class Game:
         legenda_rect_inimigo.midbottom = self.enemy.rect.midtop - pygame.math.Vector2(0, 5)
         self.screen.blit(legenda_surface_inimigo, legenda_rect_inimigo)
         
-        # --- CÓDIGO ADICIONADO PARA A LEGENDA DE AÇÃO DO JOGADOR ---
-        texto_legenda_jogador = None  # Começa sem texto
+        texto_legenda_jogador = None
 
-        # 1. Verifica o estado do jogador e define o texto apropriado
         if self.is_smoking:
             texto_legenda_jogador = "Fumando..."
         elif self.is_doing_pullups:
             texto_legenda_jogador = "Fazendo barra fixa..."
 
-        # 2. Se houver um texto para mostrar, desenha a legenda
         if texto_legenda_jogador:
-            cor_legenda_jogador = WHITE  # Uma cor diferente para destacar a ação
+            cor_legenda_jogador = WHITE
             legenda_surface_jogador = self.font.render(texto_legenda_jogador, True, cor_legenda_jogador)
             legenda_rect_jogador = legenda_surface_jogador.get_rect()
             
-            # Posiciona a legenda acima do jogador, assim como a do inspetor
             legenda_rect_jogador.midbottom = self.player.rect.midtop - pygame.math.Vector2(0, 5)
             
             self.screen.blit(legenda_surface_jogador, legenda_rect_jogador)
-        # --------------------------------------------------------------------
+
+        if self.aura_active:
+            # Posição da imagem da aura: abaixo do jogador
+            aura_offset_y = 10 # Espaço entre o jogador e a imagem
+            aura_rect = self.aura_image.get_rect(midtop=(self.player.rect.centerx, self.player.rect.bottom + aura_offset_y))
+            self.screen.blit(self.aura_image, aura_rect)
+
+            # Posição do texto da aura: abaixo da imagem da aura
+            text_offset_y = 5 # Espaço entre a imagem e o texto
+            aura_text_surf = self.font.render("+AURA +EGO", True, WHITE)
+            aura_text_rect = aura_text_surf.get_rect(midtop=(aura_rect.centerx, aura_rect.bottom + text_offset_y))
+            self.screen.blit(aura_text_surf, aura_text_rect)
 
         pygame.display.flip()
 
     def death_screen(self):
         self.screen.fill(BLACK)
         try:
-            # Carrega a imagem da tela de morte
             death_img = pygame.image.load("assets/itsover.png").convert_alpha()
-            # Posiciona a imagem no mesmo lugar que o texto ocupava
             death_rect = death_img.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
             self.screen.blit(death_img, death_rect)
         except pygame.error:
-            # Se a imagem não for encontrada, exibe o texto original como fallback
             title_surf = self.title_font.render("VOCÊ FOI PEGO!", True, RED)
             title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
             self.screen.blit(title_surf, title_rect)
@@ -340,7 +355,7 @@ class Game:
 
             pygame.display.flip()
         
-        return "quit" # Se a janela for fechada
+        return "quit"
 
     def quit(self):
         pygame.quit(); sys.exit()
