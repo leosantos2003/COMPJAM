@@ -10,7 +10,12 @@ from utils import clamp
 class Game:
     def __init__(self):
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        # Lógica para TELA CHEIA
+        if FULLSCREEN:
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
+        else:
+            self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+            
         pygame.display.set_caption(TITLE)
         self.clock = pygame.time.Clock()
         self.running = True
@@ -58,7 +63,7 @@ class Game:
         self.bars = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
 
-        # === MAPA COM ARVORES/PAREDES ===
+        # === MAPA COM ARVORES/PAREDES E ITENS ===
         self.game_map = Map("map.txt")
         self.solids = self.game_map.solids  # grupo de colisão
 
@@ -66,13 +71,11 @@ class Game:
         self.player = Player(self, 4, 5)
         self.all_sprites.add(self.player)
 
-        # itens (mesmos de antes)
-        cig_positions = [(200, 120), (630, 210), (900, 520), (140, 600), (500, 350)]
-        for pos in cig_positions:
+        # itens (agora carregados do mapa)
+        for pos in self.game_map.cig_positions:
             c = Cigarette(*pos)
             self.items.add(c); self.all_sprites.add(c)
-        bar_positions = [(320, 640), (780, 150), (820, 380)]
-        for pos in bar_positions:
+        for pos in self.game_map.bar_positions:
             b = PullUpBar(*pos)
             self.bars.add(b); self.all_sprites.add(b)
 

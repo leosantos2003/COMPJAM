@@ -1,10 +1,6 @@
 import pygame
 from settings import *
-from utils import clamp
-
-def _rect_of(spr):
-    # usa hitbox se existir (árvore tem hitbox menor), senão rect
-    return getattr(spr, "hitbox", spr.rect)
+from utils import clamp, _rect_of
 
 def load_spritesheet_grid(path, fw, fh):
     sheet = pygame.image.load(path).convert_alpha()
