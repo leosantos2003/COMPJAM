@@ -434,12 +434,51 @@ class Enemy(pygame.sprite.Sprite):
             self.stuck_timer = 0.0
 
     # ---------------- DEBUG DRAW ----------------
-    def draw_fov(self, surface):
-        origin = pygame.math.Vector2(self.rect.center)
+    def draw_fov(self, surface, solids):
+        # Cria uma superfície temporária para desenhar a luz com transparência
+        fov_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
+
+        origin = self.rect.center
         base_angle = math.degrees(math.atan2(self.dir.y, self.dir.x))
-        left_a  = math.radians(base_angle - self.FOV_DEGREES/2)
-        right_a = math.radians(base_angle + self.FOV_DEGREES/2)
-        left_vec  = (math.cos(left_a)*self.FOV_RANGE,  math.sin(left_a)*self.FOV_RANGE)
-        right_vec = (math.cos(right_a)*self.FOV_RANGE, math.sin(right_a)*self.FOV_RANGE)
-        pts = [origin, origin + left_vec, origin + right_vec]
-        pygame.draw.polygon(surface, (255, 100, 100), pts, width=2)
+        
+        # Lista para guardar os pontos do polígono de luz
+        light_points = [origin]
+        
+        # Número de raios para criar um efeito suave
+        num_rays = 50 
+        
+        start_angle = base_angle - self.FOV_DEGREES / 2
+        end_angle = base_angle + self.FOV_DEGREES / 2
+        
+        # Itera através dos ângulos do cone de visão
+        for i in range(num_rays + 1):
+            angle = start_angle + (end_angle - start_angle) * i / num_rays
+            rad_angle = math.radians(angle)
+            
+            # Calcula o ponto final do raio no alcance máximo
+            end_point = (origin[0] + math.cos(rad_angle) * self.FOV_RANGE,
+                         origin[1] + math.sin(rad_angle) * self.FOV_RANGE)
+            
+            closest_intersection = end_point
+            min_dist_sq = self.FOV_RANGE**2
+
+            # Verifica a colisão de cada raio com os sólidos
+            for s in solids:
+                r = _rect_of(s)
+                clipped_line = r.clipline(origin, end_point)
+                
+                if clipped_line:
+                    intersection_point = clipped_line[0] # Ponto de início do clipe é a intersecção
+                    dist_sq = (intersection_point[0] - origin[0])**2 + (intersection_point[1] - origin[1])**2
+                    if dist_sq < min_dist_sq:
+                        min_dist_sq = dist_sq
+                        closest_intersection = intersection_point
+
+            light_points.append(closest_intersection)
+        
+        # Desenha o polígono de luz preenchido e semi-transparente
+        if len(light_points) > 2:
+            pygame.draw.polygon(fov_surface, (255, 255, 100, 80), light_points)
+        
+        # Desenha a superfície da luz na tela principal
+        surface.blit(fov_surface, (0, 0))
