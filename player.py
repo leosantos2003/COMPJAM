@@ -1,19 +1,6 @@
 import pygame
 from settings import *
-from utils import clamp, _rect_of
-
-def load_spritesheet_grid(path, fw, fh):
-    sheet = pygame.image.load(path).convert_alpha()
-    sw, sh = sheet.get_size()
-    cols, rows = sw // fw, sh // fh
-    frames = []
-    for r in range(rows):
-        row = []
-        for c in range(cols):
-            rect = pygame.Rect(c*fw, r*fh, fw, fh)
-            row.append(sheet.subsurface(rect).copy())
-        frames.append(row)
-    return frames
+from utils import clamp, _rect_of, load_spritesheet_grid
 
 class Player(pygame.sprite.Sprite):
     def __init__(self, game, x, y):
