@@ -17,6 +17,67 @@ class Game:
         self.running = True
         self.dt = 0
         self.font = pygame.font.SysFont(None, 28)
+        self.title_font = pygame.font.SysFont(None, 80)
+
+    def show_menu_screen(self):
+        self.screen.fill(BLACK)
+
+        # Desenha o título
+        title_surf = self.title_font.render(TITLE, True, WHITE)
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
+        self.screen.blit(title_surf, title_rect)
+        
+        # --- NOVA LÓGICA DE CONTROLE POR TECLADO ---
+        
+        # Define os botões (retângulos para desenho)
+        play_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
+        quit_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
+        
+        # Variável para rastrear a seleção. 0 = Jogar, 1 = Sair
+        selected_option = 0
+        options = ["Jogar", "Sair"]
+
+        waiting_for_input = True
+        while waiting_for_input:
+            self.clock.tick(FPS)
+            
+            # --- Eventos ---
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    waiting_for_input = False
+                    self.running = False
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN:
+                        selected_option = (selected_option + 1) % len(options)
+                    elif event.key == pygame.K_UP:
+                        selected_option = (selected_option - 1) % len(options)
+                    
+                    if event.key == pygame.K_RETURN: # Tecla Enter
+                        if selected_option == 0: # Opção "Jogar"
+                            waiting_for_input = False
+                        elif selected_option == 1: # Opção "Sair"
+                            waiting_for_input = False
+                            self.running = False
+
+            # --- Desenho ---
+            # Define as cores com base na seleção para dar feedback visual
+            play_color = GREEN if selected_option == 0 else GRAY
+            quit_color = RED if selected_option == 1 else GRAY
+
+            # Botão Jogar
+            pygame.draw.rect(self.screen, play_color, play_button_rect)
+            play_text = self.font.render("Jogar", True, BLACK)
+            play_text_rect = play_text.get_rect(center=play_button_rect.center)
+            self.screen.blit(play_text, play_text_rect)
+            
+            # Botão Sair
+            pygame.draw.rect(self.screen, quit_color, quit_button_rect)
+            quit_text = self.font.render("Sair", True, BLACK)
+            quit_text_rect = quit_text.get_rect(center=quit_button_rect.center)
+            self.screen.blit(quit_text, quit_text_rect)
+
+            pygame.display.flip()
 
     def new(self):
         self.all_sprites = pygame.sprite.Group()
@@ -193,12 +254,11 @@ class Game:
         while waiting and self.running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
-                    waiting = False; self.running = False
+                    waiting = False
+                    self.running = False
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        waiting = False
-                    if event.key == pygame.K_ESCAPE:
-                        waiting = False; self.running = False
+                    # Se qualquer tecla for pressionada (Enter, Esc, etc.), sai da tela final
+                    waiting = False
             self.clock.tick(30)
 
     def quit(self):

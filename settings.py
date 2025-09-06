@@ -44,8 +44,8 @@ ENEMY_TURN_SPEED = 2.5  # Velocidade de giro do inimigo (radianos/s). Valores ma
 # Objetivos e Mecânicas de Sobrevivência (NOVAS REGRAS)
 MAX_STAT_LEVEL = 100.0          # O valor máximo das barras de Fôlego e Força
 
-CIGS_DECAY_RATE = 2.5           # Pontos de "Fôlego" perdidos por segundo
-BARS_DECAY_RATE = 2.0           # Pontos de "Força" perdidos por segundo
+CIGS_DECAY_RATE = 6.5           # Pontos de "Fôlego" perdidos por segundo
+BARS_DECAY_RATE = 6.0           # Pontos de "Força" perdidos por segundo
 
 CIGS_RECHARGE_RATE = 20.0       # Pontos de "Fôlego" ganhos por segundo ao estar no cigarro
 BARS_RECHARGE_RATE = 25.0       # Pontos de "Força" ganhos por segundo ao estar na barra
