@@ -79,6 +79,15 @@ class Game:
         self.start_time = 0
         self.difficulty = "Normal" # Dificuldade padrão
 
+        # --- CÓDIGO NOVO PARA CARREGAR A MÚSICA ---
+        try:
+            pygame.mixer.music.load('audio/background_music.mp3')
+            pygame.mixer.music.set_volume(0.4) # Ajuste o volume (0.0 a 1.0)
+            print("Música de fundo carregada com sucesso.")
+        except pygame.error as e:
+            print(f"Aviso: Não foi possível carregar a música de fundo: {e}")
+        # -------------------------------------------
+
     def _draw_menu_options(self, options, selected_option, start_y, line_spacing=70):
         """
         Desenha uma lista de opções de menu na tela, aplicando efeitos de seleção
@@ -190,6 +199,11 @@ class Game:
         self.result = None
         self.start_time = time.time()
 
+        # --- CÓDIGO NOVO PARA TOCAR A MÚSICA ---
+        # O argumento loops=-1 faz a música tocar continuamente
+        pygame.mixer.music.play(loops=-1)
+        # --------------------------------------
+
     def run(self):
         while self.playing:
             self.dt = self.clock.tick(FPS) / 1000.0
@@ -213,6 +227,7 @@ class Game:
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     self.playing = False
+                    pygame.mixer.music.fadeout(1000) # <-- ADICIONE AQUI
 
     def update(self):
         # Lógica do efeito "CHAPADO" (só ativa se HERB_ENABLED for True)
@@ -227,6 +242,7 @@ class Game:
 
         if (self.cigs_level <= 0 or self.bars_level <= 0) and not self.result:
             self.result = "lose"; self.playing = False
+            pygame.mixer.music.fadeout(1000) # <-- ADICIONE AQUI
 
         self.player.update(self.dt, self.solids)
         self.enemy.update(self.dt, self.player, self.solids, self.game_map)
@@ -299,6 +315,7 @@ class Game:
 
         if self.enemy.sees(self.player, self.solids) and not self.result:
             self.result = "lose"; self.playing = False
+            pygame.mixer.music.fadeout(1000) # <-- E ADICIONE AQUI
         
         # Atualiza a pontuação baseada no tempo
         if self.playing:

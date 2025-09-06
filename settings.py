@@ -43,7 +43,7 @@ MAX_STAT_LEVEL = 100.0          # O valor máximo das barras de Fôlego e Força
 CIGS_DECAY_RATE = 8.0           # Pontos de "Fôlego" perdidos por segundo
 BARS_DECAY_RATE = 8.0           # Pontos de "Força" perdidos por segundo
 
-CIGS_RECHARGE_RATE = 20.0       # Pontos de "Fôlego" ganhos por segundo ao estar no cigarro
+CIGS_RECHARGE_RATE = 25.0       # Pontos de "Fôlego" ganhos por segundo ao estar no cigarro
 BARS_RECHARGE_RATE = 25.0       # Pontos de "Força" ganhos por segundo ao estar na barra
 
 # --- Adicionado para o item "Herb" ---
