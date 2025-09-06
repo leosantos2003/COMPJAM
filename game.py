@@ -241,23 +241,34 @@ class Game:
         self.draw_hud()
         self.draw_status_animations()
 
-        # --- CÓDIGO ADICIONADO PARA DESENHAR A LEGENDA DO INSPETOR ---
-        # 1. Define o texto e a cor da legenda
-        texto_legenda = self.enemy.name
-        cor_legenda = WHITE  # Você pode usar qualquer cor de 'settings.py'
+        # --- CÓDIGO DA LEGENDA DO INSPETOR (já existente) ---
+        texto_legenda_inimigo = self.enemy.name
+        cor_legenda_inimigo = WHITE
+        legenda_surface_inimigo = self.font.render(texto_legenda_inimigo, True, cor_legenda_inimigo)
+        legenda_rect_inimigo = legenda_surface_inimigo.get_rect()
+        legenda_rect_inimigo.midbottom = self.enemy.rect.midtop - pygame.math.Vector2(0, 5)
+        self.screen.blit(legenda_surface_inimigo, legenda_rect_inimigo)
+        
+        # --- CÓDIGO ADICIONADO PARA A LEGENDA DE AÇÃO DO JOGADOR ---
+        texto_legenda_jogador = None  # Começa sem texto
 
-        # 2. Renderiza o texto em uma superfície
-        legenda_surface = self.font.render(texto_legenda, True, cor_legenda)
-        legenda_rect = legenda_surface.get_rect()
+        # 1. Verifica o estado do jogador e define o texto apropriado
+        if self.is_smoking:
+            texto_legenda_jogador = "Fumando..."
+        elif self.is_doing_pullups:
+            texto_legenda_jogador = "Fazendo barra fixa..."
 
-        # 3. Posiciona a legenda um pouco acima do inspetor
-        # O centro inferior (midbottom) da legenda ficará alinhado ao centro superior (midtop) do inspetor
-        # O -5 serve para dar um pequeno espaço entre o nome e a cabeça do inspetor
-        legenda_rect.midbottom = self.enemy.rect.midtop - pygame.math.Vector2(0, 5)
-
-        # 4. Desenha a legenda na tela
-        self.screen.blit(legenda_surface, legenda_rect)
-        # --------------------------------------------------------------
+        # 2. Se houver um texto para mostrar, desenha a legenda
+        if texto_legenda_jogador:
+            cor_legenda_jogador = GREEN  # Uma cor diferente para destacar a ação
+            legenda_surface_jogador = self.font.render(texto_legenda_jogador, True, cor_legenda_jogador)
+            legenda_rect_jogador = legenda_surface_jogador.get_rect()
+            
+            # Posiciona a legenda acima do jogador, assim como a do inspetor
+            legenda_rect_jogador.midbottom = self.player.rect.midtop - pygame.math.Vector2(0, 5)
+            
+            self.screen.blit(legenda_surface_jogador, legenda_rect_jogador)
+        # --------------------------------------------------------------------
 
         pygame.display.flip()
 
