@@ -1,18 +1,27 @@
 # main.py
 
-import pygame
 from game import Game
 
 if __name__ == "__main__":
     g = Game()
     
+    # Variável para controlar o estado do jogo
+    action = "menu"
+
     while g.running:
-        g.show_menu_screen() # 1. Mostra o menu e espera
+        if action == "menu":
+            action = g.show_menu_screen()
         
-        # Se o jogador não fechou o jogo no menu, inicia uma nova partida
-        if g.running:
-            g.new()          # 2. Prepara uma nova partida
-            g.run()          # 3. Executa a partida até o fim
+        elif action == "play":
+            g.new()
+            action = g.run() # O jogo roda e retorna "restart" ou "menu"
+
+        elif action == "restart":
+            # Se a ação for recomeçar, mudamos para "play"
+            # para que na próxima iteração do loop o jogo comece de novo
+            action = "play"
+        
+        elif action == "quit":
+            g.running = False
     
-    # 4. Sai do jogo
     g.quit()

@@ -27,13 +27,9 @@ class Game:
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
         self.screen.blit(title_surf, title_rect)
         
-        # --- NOVA LÓGICA DE CONTROLE POR TECLADO ---
-        
-        # Define os botões (retângulos para desenho)
         play_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
         quit_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
         
-        # Variável para rastrear a seleção. 0 = Jogar, 1 = Sair
         selected_option = 0
         options = ["Jogar", "Sair"]
 
@@ -41,7 +37,6 @@ class Game:
         while waiting_for_input:
             self.clock.tick(FPS)
             
-            # --- Eventos ---
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting_for_input = False
@@ -53,29 +48,80 @@ class Game:
                     elif event.key == pygame.K_UP:
                         selected_option = (selected_option - 1) % len(options)
                     
-                    if event.key == pygame.K_RETURN: # Tecla Enter
-                        if selected_option == 0: # Opção "Jogar"
-                            waiting_for_input = False
-                        elif selected_option == 1: # Opção "Sair"
-                            waiting_for_input = False
+                    if event.key == pygame.K_RETURN:
+                        if selected_option == 0: # Jogar
+                            return "play"
+                        elif selected_option == 1: # Sair
                             self.running = False
+                            return "quit"
 
             # --- Desenho ---
-            # Define as cores com base na seleção para dar feedback visual
             play_color = GREEN if selected_option == 0 else GRAY
             quit_color = RED if selected_option == 1 else GRAY
 
-            # Botão Jogar
             pygame.draw.rect(self.screen, play_color, play_button_rect)
             play_text = self.font.render("Jogar", True, BLACK)
             play_text_rect = play_text.get_rect(center=play_button_rect.center)
             self.screen.blit(play_text, play_text_rect)
             
-            # Botão Sair
             pygame.draw.rect(self.screen, quit_color, quit_button_rect)
             quit_text = self.font.render("Sair", True, BLACK)
             quit_text_rect = quit_text.get_rect(center=quit_button_rect.center)
             self.screen.blit(quit_text, quit_text_rect)
+
+            pygame.display.flip()
+        
+        # CORREÇÃO: Esta linha agora está FORA do loop 'while'
+        return "quit"
+
+    def show_game_over_screen(self):
+        self.screen.fill(BLACK)
+
+        # Título
+        title_surf = self.title_font.render("Você morreu...", True, RED)
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
+        self.screen.blit(title_surf, title_rect)
+        
+        # Botões
+        restart_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
+        menu_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
+        
+        selected_option = 0
+        options = ["Recomeçar", "Voltar ao Menu"]
+
+        waiting_for_input = True
+        while waiting_for_input:
+            self.clock.tick(FPS)
+            
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    waiting_for_input = False
+                    self.running = False
+                    return "quit" # Retorna "quit" se a janela for fechada
+
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN:
+                        selected_option = (selected_option + 1) % len(options)
+                    elif event.key == pygame.K_UP:
+                        selected_option = (selected_option - 1) % len(options)
+                    
+                    if event.key == pygame.K_RETURN:
+                        if selected_option == 0: # Recomeçar
+                            return "restart"
+                        elif selected_option == 1: # Voltar ao Menu
+                            return "menu"
+
+            # Desenho
+            restart_color = GREEN if selected_option == 0 else GRAY
+            menu_color = CYAN if selected_option == 1 else GRAY
+
+            pygame.draw.rect(self.screen, restart_color, restart_button_rect)
+            restart_text = self.font.render("Recomeçar", True, BLACK)
+            self.screen.blit(restart_text, restart_text.get_rect(center=restart_button_rect.center))
+            
+            pygame.draw.rect(self.screen, menu_color, menu_button_rect)
+            menu_text = self.font.render("Voltar ao Menu", True, BLACK)
+            self.screen.blit(menu_text, menu_text.get_rect(center=menu_button_rect.center))
 
             pygame.display.flip()
 
@@ -117,7 +163,12 @@ class Game:
             self.events()
             self.update()
             self.draw()
-        self.end_screen()
+        
+        # Quando o loop 'playing' termina, mostra a tela de game over
+        # e retorna a escolha do jogador para o loop principal em main.py
+        if self.running:
+             return self.show_game_over_screen()
+        return "quit"
 
     def events(self):
         for event in pygame.event.get():
