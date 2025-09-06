@@ -47,9 +47,9 @@ class Game:
             self.timer_font = pygame.font.SysFont(None, 40)
             
         try:
-            self.menu_nav_sound = pygame.mixer.Sound("assets/sound/menu_sound.ogg")
+            self.menu_nav_sound = pygame.mixer.Sound("assets/sound/menu_sound.wav")
         except pygame.error:
-            print("Aviso: Arquivo de som do menu (menu_sound.ogg) não encontrado.")
+            print("Aviso: Arquivo de som do menu (menu_sound.wav) não encontrado.")
             self.menu_nav_sound = None
 
         # Carregar animações de status
