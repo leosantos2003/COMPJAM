@@ -91,11 +91,14 @@ class Game:
         # --- CÓDIGO NOVO PARA CARREGAR OS EFEITOS SONOROS ---
         self.smoking_sound = None
         self.pullup_sound = None
+        self.jumpscare_sound = None # <-- Adicione esta linha
         try:
             self.smoking_sound = pygame.mixer.Sound('audio/smoke_sound.mp3')
             self.smoking_sound.set_volume(0.6)
             self.pullup_sound = pygame.mixer.Sound('audio/bar_sound.mp3')
             self.pullup_sound.set_volume(0.6)
+            self.jumpscare_sound = pygame.mixer.Sound('audio/jumpscare.mp3') # <-- Adicione esta linha
+            self.jumpscare_sound.set_volume(0.7) # <-- Adicione esta linha
             print("Efeitos sonoros carregados.")
         except pygame.error as e:
             print(f"Aviso: Não foi possível carregar um ou mais efeitos sonoros: {e}")
@@ -274,6 +277,20 @@ class Game:
             self.bars_level += BARS_RECHARGE_RATE * self.dt
             self.is_doing_pullups = True
 
+        # --- LÓGICA DE CONTROLE DOS EFEITOS SONOROS ---
+        # Fumar
+        if self.is_smoking and not was_smoking and self.smoking_sound:
+            self.smoking_sound.play(loops=-1) # Começa a tocar em loop
+        elif not self.is_smoking and was_smoking and self.smoking_sound:
+            self.smoking_sound.stop() # Para imediatamente
+
+        # Barra Fixa
+        if self.is_doing_pullups and not was_doing_pullups and self.pullup_sound:
+            self.pullup_sound.play(loops=-1) # Começa a tocar em loop
+        elif not self.is_doing_pullups and was_doing_pullups and self.pullup_sound:
+            self.pullup_sound.stop() # Para imediatamente
+        # -----------------------------------------------
+
         # Lógica do Herb (só executa se HERB_ENABLED for True)
         if HERB_ENABLED:
             # Colisão com o Herb
@@ -318,6 +335,10 @@ class Game:
             if not self.aura_active and random.randint(1, 14) == 1:
                 self.aura_active = True
                 self.aura_timer = self.aura_duration
+                # --- TOQUE O SOM DE SUSTO AQUI ---
+                if self.jumpscare_sound:
+                    self.jumpscare_sound.play()
+                # ---------------------------------
 
         if self.aura_active:
             self.aura_timer -= self.dt
