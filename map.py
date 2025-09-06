@@ -26,14 +26,17 @@ class Map:
         self.cig_positions = []
         self.bar_positions = []
 
-        # carrega sprites e faz scale pro TILE
+        # Carrega sprites e faz scale pro TILE
         self.wall_img = pygame.image.load("assets/wall.png").convert_alpha()
         self.wall_img = pygame.transform.scale(self.wall_img, (TILE, TILE))
 
         self.tree_img = pygame.image.load("assets/tree.png").convert_alpha()
         self.tree_img = pygame.transform.scale(self.tree_img, (TILE, TILE))
 
-        # lê o mapa
+        self.ground_img = pygame.image.load("assets/ground.png").convert_alpha()
+        self.ground_img = pygame.transform.scale(self.ground_img, (TILE, TILE))
+
+        # Lê o mapa
         path = Path(map_file)
         with path.open("r", encoding="utf-8") as f:
             for j, raw in enumerate(f.read().splitlines()):
@@ -54,26 +57,23 @@ class Map:
                     elif ch == "B":
                         self.bar_positions.append((px_center, py_center))
 
-
-        # fundo xadrez suave (pré-draw simples)
-        self.bg = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        self.bg.fill((20, 20, 30))
-        for x in range(0, SCREEN_WIDTH, TILE):
-            pygame.draw.line(self.bg, (30, 30, 45), (x, 0), (x, SCREEN_HEIGHT))
+        # Cria a superfície do mapa com o chão
+        self.static_surface = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.static_surface.fill((20, 20, 30))  # Cor de fundo caso ground.png não cubra tudo
+        # Preenche com ground.png em todos os tiles
         for y in range(0, SCREEN_HEIGHT, TILE):
-            pygame.draw.line(self.bg, (30, 30, 45), (0, y), (SCREEN_WIDTH, y))
-
-        # cria uma surface para tiles estáticos (draw mais barato)
-        self.static_surface = self.bg.copy()
+            for x in range(0, SCREEN_WIDTH, TILE):
+                self.static_surface.blit(self.ground_img, (x, y))
+        # Desenha tiles sólidos por cima
         for spr in sorted(self.solids, key=lambda s: (s.rect.y, s.rect.x)):
             self.static_surface.blit(spr.image, spr.rect.topleft)
 
     @property
     def spawn_px(self):
         sx, sy = self.spawn_tile
-        # alinhar pela base do tile (coerente com player)
+        # Alinhar pela base do tile (coerente com player)
         return (sx * TILE + TILE // 2, (sy + 1) * TILE)
 
     def draw(self, surface: pygame.Surface):
-        # só blita a camada pronta
+        # Só blita a camada pronta
         surface.blit(self.static_surface, (0, 0))

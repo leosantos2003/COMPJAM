@@ -45,7 +45,7 @@ class Player(pygame.sprite.Sprite):
         self.rect.midbottom = self.pos
 
         # hitbox do player (um pouco menor que o sprite)
-        self.hitbox = pygame.Rect(0, 0, int(TILE * 0.6), int(TILE * 0.55))
+        self.hitbox = pygame.Rect(0, 0, int(self.rect.width * 0.8), int(self.rect.height * 0.8))
         self.hitbox.midbottom = self.rect.midbottom
 
 
