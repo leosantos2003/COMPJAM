@@ -35,7 +35,7 @@ class Enemy(pygame.sprite.Sprite):
         # Exemplo: 50% maior (1.5 vezes o tamanho do tile)
         largura = int(TILE * 1.5)
         altura = int(TILE * 1.5)
-        self.image = pygame.transform.scale(original_image, (largura, altura))
+        self.image = pygame.transform.smoothscale(original_image, (largura, altura))
         self.rect = self.image.get_rect(center=(x, y))
 
         # --- ADICIONE ESTA LINHA ---

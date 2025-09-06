@@ -14,7 +14,12 @@ from utils import clamp, load_spritesheet_grid
 
 class Game:
     def __init__(self):
+        # --- ALTERAÇÃO FEITA AQUI (Otimização de áudio) ---
+        # Pré-inicializa o mixer com um buffer menor para reduzir a latência do som
+        pygame.mixer.pre_init(44100, -16, 2, 512)
+        # ---------------------------------------------------
         pygame.init()
+        
         # Lógica para TELA CHEIA
         if FULLSCREEN:
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
@@ -40,6 +45,12 @@ class Game:
             self.menu_font_selected = pygame.font.SysFont(None, 55)
             self.hud_font = pygame.font.SysFont(None, 28)
             self.timer_font = pygame.font.SysFont(None, 40)
+            
+        try:
+            self.menu_nav_sound = pygame.mixer.Sound("assets/sound/menu_sound.ogg")
+        except pygame.error:
+            print("Aviso: Arquivo de som do menu (menu_sound.ogg) não encontrado.")
+            self.menu_nav_sound = None
 
         # Carregar animações de status
         self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427, 240)
@@ -129,8 +140,12 @@ class Game:
                 if event.type == pygame.KEYDOWN:
                     if event.key == pygame.K_DOWN:
                         selected_option = (selected_option + 1) % len(options)
+                        if self.menu_nav_sound:
+                            self.menu_nav_sound.play()
                     elif event.key == pygame.K_UP:
                         selected_option = (selected_option - 1) % len(options)
+                        if self.menu_nav_sound:
+                            self.menu_nav_sound.play()
                     if event.key == pygame.K_RETURN:
                         if selected_option < 3:
                             return self.maps[selected_option], self.difficulty
@@ -434,8 +449,14 @@ class Game:
                 if event.type == pygame.QUIT:
                     waiting_for_input = False; self.running = False; return "quit"
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_DOWN: selected_option = (selected_option + 1) % 2
-                    elif event.key == pygame.K_UP: selected_option = (selected_option - 1) % 2
+                    if event.key == pygame.K_DOWN:
+                        selected_option = (selected_option + 1) % 2
+                        if self.menu_nav_sound:
+                            self.menu_nav_sound.play()
+                    elif event.key == pygame.K_UP:
+                        selected_option = (selected_option - 1) % 2
+                        if self.menu_nav_sound:
+                            self.menu_nav_sound.play()
                     if event.key == pygame.K_RETURN:
                         return "restart" if selected_option == 0 else "menu"
 
