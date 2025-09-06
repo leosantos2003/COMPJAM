@@ -26,7 +26,7 @@ class Game:
         self.timer_font = pygame.font.SysFont(None, 40)
 
         # Carregar animações de status com as dimensões corretas
-        self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427*2, 240*2)
+        self.smoke_frames = load_spritesheet_grid("assets/smoke.png", 427, 240)
         self.bar_frames = load_spritesheet_grid("assets/bar.png", 461, 240)
         self.is_smoking = False
         self.is_doing_pullups = False
