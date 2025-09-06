@@ -28,8 +28,11 @@ class Game:
         title_surf = self.title_font.render(TITLE, True, WHITE)
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
         self.screen.blit(title_surf, title_rect)
-        play_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
-        quit_button_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
+        
+        # Ajustando a posição dos botões para serem reutilizáveis
+        button_play_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
+        button_quit_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
+        
         selected_option = 0
         options = ["Jogar", "Sair"]
         waiting_for_input = True
@@ -43,18 +46,22 @@ class Game:
                     if event.key == pygame.K_DOWN: selected_option = (selected_option + 1) % len(options)
                     elif event.key == pygame.K_UP: selected_option = (selected_option - 1) % len(options)
                     if event.key == pygame.K_RETURN:
-                        if selected_option == 0: waiting_for_input = False
-                        else:
+                        if selected_option == 0: waiting_for_input = False # Inicia o jogo
+                        else: # Sai do jogo
                             waiting_for_input = False
                             self.running = False
+            
             play_color = GREEN if selected_option == 0 else GRAY
             quit_color = RED if selected_option == 1 else GRAY
-            pygame.draw.rect(self.screen, play_color, play_button_rect)
+            
+            pygame.draw.rect(self.screen, play_color, button_play_rect)
             play_text = self.font.render("Jogar", True, BLACK)
-            self.screen.blit(play_text, play_text.get_rect(center=play_button_rect.center))
-            pygame.draw.rect(self.screen, quit_color, quit_button_rect)
+            self.screen.blit(play_text, play_text.get_rect(center=button_play_rect.center))
+            
+            pygame.draw.rect(self.screen, quit_color, button_quit_rect)
             quit_text = self.font.render("Sair", True, BLACK)
-            self.screen.blit(quit_text, quit_text.get_rect(center=quit_button_rect.center))
+            self.screen.blit(quit_text, quit_text.get_rect(center=button_quit_rect.center))
+            
             pygame.display.flip()
 
     def new(self):
@@ -95,7 +102,10 @@ class Game:
             self.events()
             self.update()
             self.draw()
-        self.end_screen()
+        if self.result == "lose":
+            self.death_screen()
+        else:
+            self.end_screen()
 
     def events(self):
         for event in pygame.event.get():
@@ -124,7 +134,7 @@ class Game:
         # aplica as variáveis de dificuldade no inimigo e atualiza com colisão
         self.enemy.move_speed = self.enemy_move_speed
         self.enemy.turn_speed = self.enemy_turn_speed
-        self.enemy.update(self.dt, self.player, self.solids)
+        self.enemy.update(self.dt, self.player, self.solids, self.game_map)
 
         cig_collisions = pygame.sprite.spritecollide(self.player, self.items, dokill=False)
         if cig_collisions: self.cigs_level += CIGS_RECHARGE_RATE * self.dt
@@ -133,7 +143,7 @@ class Game:
         self.cigs_level = clamp(self.cigs_level, 0, MAX_STAT_LEVEL)
         self.bars_level = clamp(self.bars_level, 0, MAX_STAT_LEVEL)
 
-        if self.enemy.sees(self.player) and not self.result:
+        if self.enemy.sees(self.player, self.solids) and not self.result:
             self.result = "lose"; self.playing = False
 
     def draw_hud(self):
@@ -158,6 +168,51 @@ class Game:
         self.enemy.draw_fov(self.screen)
         self.draw_hud()
         pygame.display.flip()
+
+    def death_screen(self):
+        self.screen.fill(BLACK)
+        title_surf = self.title_font.render("VOCÊ FOI PEGO!", True, RED)
+        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
+        self.screen.blit(title_surf, title_rect)
+        
+        button_restart_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2, 200, 50)
+        button_menu_rect = pygame.Rect(SCREEN_WIDTH/2 - 100, SCREEN_HEIGHT/2 + 70, 200, 50)
+        
+        selected_option = 0
+        options = ["Recomeçar", "Voltar ao Menu"]
+        waiting_for_input = True
+        while waiting_for_input:
+            self.clock.tick(FPS)
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    waiting_for_input = False
+                    self.running = False
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_DOWN: selected_option = (selected_option + 1) % len(options)
+                    elif event.key == pygame.K_UP: selected_option = (selected_option - 1) % len(options)
+                    if event.key == pygame.K_RETURN:
+                        if selected_option == 0: # Recomeçar o jogo
+                            waiting_for_input = False
+                            self.new()
+                            self.run()
+                        else: # Voltar ao menu principal
+                            waiting_for_input = False
+                            self.show_menu_screen()
+                            self.new() # Reinicia o jogo para o estado inicial para o menu
+                            self.run()
+            
+            restart_color = GREEN if selected_option == 0 else GRAY
+            menu_color = RED if selected_option == 1 else GRAY
+            
+            pygame.draw.rect(self.screen, restart_color, button_restart_rect)
+            restart_text = self.font.render("Recomeçar", True, BLACK)
+            self.screen.blit(restart_text, restart_text.get_rect(center=button_restart_rect.center))
+            
+            pygame.draw.rect(self.screen, menu_color, button_menu_rect)
+            menu_text = self.font.render("Voltar ao Menu", True, BLACK)
+            self.screen.blit(menu_text, menu_text.get_rect(center=button_menu_rect.center))
+            
+            pygame.display.flip()
 
     def end_screen(self):
         msg = "VOCÊ VENCEU!" if self.result == "win" else "VOCÊ PERDEU!"
