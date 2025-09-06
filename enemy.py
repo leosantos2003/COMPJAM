@@ -1,8 +1,10 @@
-# enemy.py
 import math
 import pygame
 from settings import *
 from utils import clamp
+
+def _rect_of(spr):
+    return getattr(spr, "hitbox", spr.rect)
 
 class Enemy(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -13,14 +15,15 @@ class Enemy(pygame.sprite.Sprite):
         self.dir = pygame.math.Vector2(1, 0)
         self.vel = pygame.math.Vector2(0, 0)
 
-        # VARIÁVEIS DE DIFICULDADE (serão controladas pela classe Game)
         self.move_speed = ENEMY_SPEED
         self.turn_speed = ENEMY_TURN_SPEED
 
         self.target_pos = pygame.math.Vector2(x, y)
         self.retarget_timer = 0.0
 
-    def update(self, dt, player):
+    def update(self, dt, player, solids=None):
+        if solids is None: solids = []
+
         self.retarget_timer -= dt
         if self.retarget_timer <= 0:
             self.retarget_timer = ENEMY_RETARGET_SECONDS
@@ -31,16 +34,31 @@ class Enemy(pygame.sprite.Sprite):
 
         if dist_to_target > TILE / 2:
             target_dir = (self.target_pos - pos).normalize()
-            
-            # USA AS VARIÁVEIS DA INSTÂNCIA EM VEZ DAS CONSTANTES
             self.dir = self.dir.slerp(target_dir, self.turn_speed * dt)
             self.vel = self.dir * self.move_speed
         else:
             self.vel = pygame.math.Vector2(0, 0)
-        
-        self.rect.center += self.vel * dt
 
-    # Funções sees e draw_fov continuam iguais...
+        # tentativa de movimento com resolução simples de colisão por eixo
+        # X
+        old = pygame.math.Vector2(self.rect.center)
+        self.rect.centerx += self.vel.x * dt
+        for s in solids:
+            if _rect_of(s).colliderect(self.rect):
+                # empurra pra fora
+                if self.vel.x > 0:
+                    self.rect.right = _rect_of(s).left
+                elif self.vel.x < 0:
+                    self.rect.left = _rect_of(s).right
+        # Y
+        self.rect.centery += self.vel.y * dt
+        for s in solids:
+            if _rect_of(s).colliderect(self.rect):
+                if self.vel.y > 0:
+                    self.rect.bottom = _rect_of(s).top
+                elif self.vel.y < 0:
+                    self.rect.top = _rect_of(s).bottom
+
     def sees(self, player):
         to_player = pygame.math.Vector2(player.rect.center) - pygame.math.Vector2(self.rect.center)
         dist = to_player.length()
