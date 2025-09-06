@@ -29,9 +29,18 @@ class Enemy(pygame.sprite.Sprite):
     """
     def __init__(self, x, y):
         super().__init__()
-        self.image = pygame.Surface((TILE, TILE))
-        self.image.fill(RED)
+        # Carrega a imagem do inspetor e a redimensiona
+        # Supondo que a imagem se chame 'geralzao.png' e esteja na pasta 'assets'
+        original_image = pygame.image.load("assets/geralzao.png").convert_alpha()
+        # Exemplo: 50% maior (1.5 vezes o tamanho do tile)
+        largura = int(TILE * 1.5)
+        altura = int(TILE * 1.5)
+        self.image = pygame.transform.scale(original_image, (largura, altura))
         self.rect = self.image.get_rect(center=(x, y))
+
+        # --- ADICIONE ESTA LINHA ---
+        self.name = "Geralzão"
+        # ---------------------------
 
         # movimento
         self.dir = pygame.math.Vector2(1, 0)

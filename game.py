@@ -240,6 +240,25 @@ class Game:
         self.enemy.draw_fov(self.screen)
         self.draw_hud()
         self.draw_status_animations()
+
+        # --- CÓDIGO ADICIONADO PARA DESENHAR A LEGENDA DO INSPETOR ---
+        # 1. Define o texto e a cor da legenda
+        texto_legenda = self.enemy.name
+        cor_legenda = WHITE  # Você pode usar qualquer cor de 'settings.py'
+
+        # 2. Renderiza o texto em uma superfície
+        legenda_surface = self.font.render(texto_legenda, True, cor_legenda)
+        legenda_rect = legenda_surface.get_rect()
+
+        # 3. Posiciona a legenda um pouco acima do inspetor
+        # O centro inferior (midbottom) da legenda ficará alinhado ao centro superior (midtop) do inspetor
+        # O -5 serve para dar um pequeno espaço entre o nome e a cabeça do inspetor
+        legenda_rect.midbottom = self.enemy.rect.midtop - pygame.math.Vector2(0, 5)
+
+        # 4. Desenha a legenda na tela
+        self.screen.blit(legenda_surface, legenda_rect)
+        # --------------------------------------------------------------
+
         pygame.display.flip()
 
     def death_screen(self):
