@@ -321,7 +321,7 @@ class Game:
             # Se houver uma animação, desenha ela ACIMA da legenda de texto
             if animation_frame:
                 # Define um tamanho menor para a animação sobre o jogador
-                anim_size = (96, 72) 
+                anim_size = (108, 84) 
                 scaled_frame = pygame.transform.smoothscale(animation_frame, anim_size)
                 anim_rect = scaled_frame.get_rect()
                 # Posiciona a animação acima da legenda

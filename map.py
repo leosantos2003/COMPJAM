@@ -33,7 +33,7 @@ class Map:
         self.tree_img = pygame.image.load("assets/tree.png").convert_alpha()
         self.tree_img = pygame.transform.scale(self.tree_img, (TILE, TILE))
 
-        self.ground_img = pygame.image.load("assets/ground.png").convert_alpha()
+        self.ground_img = pygame.image.load("assets/grass.png").convert_alpha()
         self.ground_img = pygame.transform.scale(self.ground_img, (TILE, TILE))
 
         # 1. Carrega e prepara a imagem da logo (já existente)
