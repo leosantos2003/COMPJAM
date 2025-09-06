@@ -147,6 +147,7 @@ class Game:
     def show_briefing_screen(self):
         """
         Mostra uma tela preta com frases sequenciais antes do início da partida.
+        Permite pular a cena com a tecla Enter.
         """
         phrases = [
             "Você fumará todos os cigarros...",
@@ -156,44 +157,59 @@ class Game:
         displayed_phrases = []
         current_phrase_index = 0
         
-        # Usa pygame.time.get_ticks() para um controle de tempo preciso
         last_update_time = pygame.time.get_ticks()
         delay_seconds = 3
         delay_ms = delay_seconds * 1000
+
+        # Prepara o texto de "pular" uma vez fora do loop
+        skip_font = self.hud_font # Usando uma fonte menor para a dica
+        skip_surf = skip_font.render("Pressione Enter para pular", True, GRAY)
+        skip_rect = skip_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT - 50))
 
         briefing_active = True
         while briefing_active:
             self.clock.tick(FPS)
 
-            # Lógica para fechar o jogo a qualquer momento
+            # --- ALTERAÇÃO NO LOOP DE EVENTOS ---
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     self.quit()
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-                    self.quit()
+                if event.type == pygame.KEYDOWN:
+                    # Permite sair com ESC
+                    if event.key == pygame.K_ESCAPE:
+                        self.quit()
+                    # Permite pular com ENTER
+                    if event.key == pygame.K_RETURN:
+                        briefing_active = False
+            # --- FIM DA ALTERAÇÃO ---
 
-            # Lógica de tempo para mostrar as frases
             now = pygame.time.get_ticks()
             if now - last_update_time > delay_ms:
                 if current_phrase_index < len(phrases):
-                    # Adiciona a próxima frase à lista de exibição
                     displayed_phrases.append(phrases[current_phrase_index])
                     current_phrase_index += 1
-                    last_update_time = now # Reinicia o timer para a próxima espera
+                    last_update_time = now
                 else:
-                    # Todas as frases foram exibidas e a última espera terminou
                     briefing_active = False
 
-            # Lógica de desenho
             self.screen.fill(BLACK)
             
-            # Desenha todas as frases que já foram reveladas
+            # Desenha as frases do briefing
             start_y = SCREEN_HEIGHT / 2 - 100
             line_spacing = 60
             for i, text in enumerate(displayed_phrases):
-                text_surf = self.menu_font_normal.render(text, True, WHITE)
+                if i == 2:
+                    color = YELLOW
+                else:
+                    color = WHITE
+                
+                text_surf = self.menu_font_normal.render(text, True, color)
                 text_rect = text_surf.get_rect(center=(SCREEN_WIDTH / 2, start_y + i * line_spacing))
                 self.screen.blit(text_surf, text_rect)
+
+            # --- ADICIONADO: Desenha o texto para pular ---
+            self.screen.blit(skip_surf, skip_rect)
+            # --------------------------------------------
 
             pygame.display.flip()
 
@@ -520,53 +536,72 @@ class Game:
 
 
     def death_screen(self):
-        # Prepara os elementos estáticos uma vez fora do loop
+        # --- PREPARAÇÃO DOS ELEMENTOS ---
+
+        # Imagem "itsover" ou texto "VOCÊ FOI PEGO!"
         try:
             death_img = pygame.image.load("assets/itsover.png").convert_alpha()
-            death_rect = death_img.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
         except pygame.error:
             death_img = self.title_font.render("VOCÊ FOI PEGO!", True, RED)
-            death_rect = death_img.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
+        death_rect = death_img.get_rect() # Posição será definida abaixo
 
+        # Texto "Você foi banido..."
+        font_banido = self.menu_font_normal
+        parte1_surf = font_banido.render("Você foi ", True, WHITE)
+        parte2_surf = font_banido.render("banido", True, RED)
+        parte3_surf = font_banido.render(" do Geralzão.", True, WHITE)
+        total_width_banido = parte1_surf.get_width() + parte2_surf.get_width() + parte3_surf.get_width()
+        start_x_banido = (SCREEN_WIDTH - total_width_banido) / 2
+
+        # Texto "Pontuação Final"
         score_surf = self.menu_font_normal.render(f"Pontuação Final: {self.score}", True, WHITE)
-        score_rect = score_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2))
+        score_rect = score_surf.get_rect() # Posição será definida abaixo
 
+        # --- LÓGICA DE LAYOUT VERTICAL ---
+        # Define a ordem e o espaçamento dos elementos de cima para baixo
+        
+        # 1. Posiciona o texto "Você foi banido..." no topo
+        pos_y_banido = SCREEN_HEIGHT * 0.15
+        
+        # 2. Posiciona a imagem "itsover" abaixo do texto, com um espaçamento
+        death_rect.center = (SCREEN_WIDTH / 2, pos_y_banido + font_banido.get_height() + 100)
+        
+        # 3. Posiciona a pontuação final abaixo da imagem, com um espaçamento
+        score_rect.center = (SCREEN_WIDTH / 2, death_rect.bottom + 60)
+        
+        # 4. Define a posição inicial das opções interativas ("Recomeçar", etc.)
+        opcoes_start_y = score_rect.bottom + 80
+
+        # --- LOOP DA TELA DE MORTE ---
         options = ["Recomeçar", "Voltar ao Menu"]
         selected_option = 0
         waiting_for_input = True
         
         while waiting_for_input:
             self.clock.tick(FPS)
-            
-            # --- CORREÇÃO APLICADA AQUI ---
-            # 1. Limpa a tela em TODAS as iterações do loop
             self.screen.fill(BLACK)
             
-            # 2. Redesenha os elementos estáticos a cada frame
+            # Desenha os elementos na ordem e posições calculadas
+            self.screen.blit(parte1_surf, (start_x_banido, pos_y_banido))
+            self.screen.blit(parte2_surf, (start_x_banido + parte1_surf.get_width(), pos_y_banido))
+            self.screen.blit(parte3_surf, (start_x_banido + parte1_surf.get_width() + parte2_surf.get_width(), pos_y_banido))
+            
             self.screen.blit(death_img, death_rect)
             self.screen.blit(score_surf, score_rect)
             
-            # 3. Desenha as opções interativas (que mudam de cor/tamanho)
-            self._draw_menu_options(options, selected_option, start_y=SCREEN_HEIGHT / 2 + 120)
-            # --------------------------------
+            self._draw_menu_options(options, selected_option, start_y=opcoes_start_y)
 
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     waiting_for_input = False; self.running = False; return "quit"
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_DOWN:
-                        selected_option = (selected_option + 1) % 2
-                        if self.menu_nav_sound:
-                            self.menu_nav_sound.play()
-                    elif event.key == pygame.K_UP:
-                        selected_option = (selected_option - 1) % 2
-                        if self.menu_nav_sound:
-                            self.menu_nav_sound.play()
+                    if event.key == pygame.K_DOWN: selected_option = (selected_option + 1) % 2
+                    elif event.key == pygame.K_UP: selected_option = (selected_option - 1) % 2
                     if event.key == pygame.K_RETURN:
                         return "restart" if selected_option == 0 else "menu"
 
             pygame.display.flip()
-
+        
         return "quit"
 
     def quit(self):
