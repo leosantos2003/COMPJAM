@@ -56,8 +56,16 @@ class Game:
 
             # Desenha as opções
             for i, option in enumerate(options):
-                color = GREEN if i == selected_option else GRAY
                 rect = pygame.Rect(SCREEN_WIDTH/2 - 150, SCREEN_HEIGHT/2 - 50 + i * 70, 300, 50)
+                
+                # --- LÓGICA DE COR ATUALIZADA ---
+                is_quit_option = (option == "Sair")
+                
+                if i == selected_option:
+                    color = RED if is_quit_option else GREEN
+                else:
+                    color = GRAY
+
                 pygame.draw.rect(self.screen, color, rect)
                 text_surf = self.font.render(option, True, BLACK)
                 text_rect = text_surf.get_rect(center=rect.center)
@@ -282,9 +290,17 @@ class Game:
 
     def death_screen(self):
         self.screen.fill(BLACK)
-        title_surf = self.title_font.render("VOCÊ FOI PEGO!", True, RED)
-        title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
-        self.screen.blit(title_surf, title_rect)
+        try:
+            # Carrega a imagem da tela de morte
+            death_img = pygame.image.load("assets/itsover.png").convert_alpha()
+            # Posiciona a imagem no mesmo lugar que o texto ocupava
+            death_rect = death_img.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
+            self.screen.blit(death_img, death_rect)
+        except pygame.error:
+            # Se a imagem não for encontrada, exibe o texto original como fallback
+            title_surf = self.title_font.render("VOCÊ FOI PEGO!", True, RED)
+            title_rect = title_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/4))
+            self.screen.blit(title_surf, title_rect)
 
         score_surf = self.font.render(f"Pontuação Final: {self.score}", True, WHITE)
         score_rect = score_surf.get_rect(center=(SCREEN_WIDTH/2, SCREEN_HEIGHT/2 - 50))
