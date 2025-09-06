@@ -144,6 +144,59 @@ class Game:
             # Desenha na tela
             self.screen.blit(text_surf, text_rect)
 
+    def show_briefing_screen(self):
+        """
+        Mostra uma tela preta com frases sequenciais antes do início da partida.
+        """
+        phrases = [
+            "Você fumará todos os cigarros...",
+            "Você usará todas as barras fixas...",
+            "Mas o Geralzão não irá deixar barato!"
+        ]
+        displayed_phrases = []
+        current_phrase_index = 0
+        
+        # Usa pygame.time.get_ticks() para um controle de tempo preciso
+        last_update_time = pygame.time.get_ticks()
+        delay_seconds = 3
+        delay_ms = delay_seconds * 1000
+
+        briefing_active = True
+        while briefing_active:
+            self.clock.tick(FPS)
+
+            # Lógica para fechar o jogo a qualquer momento
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    self.quit()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                    self.quit()
+
+            # Lógica de tempo para mostrar as frases
+            now = pygame.time.get_ticks()
+            if now - last_update_time > delay_ms:
+                if current_phrase_index < len(phrases):
+                    # Adiciona a próxima frase à lista de exibição
+                    displayed_phrases.append(phrases[current_phrase_index])
+                    current_phrase_index += 1
+                    last_update_time = now # Reinicia o timer para a próxima espera
+                else:
+                    # Todas as frases foram exibidas e a última espera terminou
+                    briefing_active = False
+
+            # Lógica de desenho
+            self.screen.fill(BLACK)
+            
+            # Desenha todas as frases que já foram reveladas
+            start_y = SCREEN_HEIGHT / 2 - 100
+            line_spacing = 60
+            for i, text in enumerate(displayed_phrases):
+                text_surf = self.menu_font_normal.render(text, True, WHITE)
+                text_rect = text_surf.get_rect(center=(SCREEN_WIDTH / 2, start_y + i * line_spacing))
+                self.screen.blit(text_surf, text_rect)
+
+            pygame.display.flip()
+
     def show_menu_screen(self):
         self.screen.fill(BLACK)
         title_surf = self.title_font.render(TITLE, True, WHITE)

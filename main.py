@@ -13,6 +13,13 @@ if __name__ == "__main__":
         # Se não houver um mapa definido, mostra o menu para escolher um
         if current_map is None:
             current_map, current_difficulty = g.show_menu_screen()
+            
+            # --- ADIÇÃO IMPORTANTE AQUI ---
+            # Se um mapa foi escolhido (ou seja, o jogador não fechou o jogo),
+            # mostra a tela de briefing antes de continuar.
+            if current_map:
+                g.show_briefing_screen()
+            # -------------------------------
 
         # Se o menu foi fechado ou a opção "Sair" foi escolhida, encerra o loop
         if not g.running or not current_map:
