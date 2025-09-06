@@ -92,9 +92,9 @@ class Game:
         self.smoking_sound = None
         self.pullup_sound = None
         try:
-            self.smoking_sound = pygame.mixer.Sound('audio/smoking_loop.wav')
+            self.smoking_sound = pygame.mixer.Sound('audio/smoke_sound.mp3')
             self.smoking_sound.set_volume(0.6)
-            self.pullup_sound = pygame.mixer.Sound('audio/pullup_loop.wav')
+            self.pullup_sound = pygame.mixer.Sound('audio/bar_sound.mp3')
             self.pullup_sound.set_volume(0.6)
             print("Efeitos sonoros carregados.")
         except pygame.error as e:
