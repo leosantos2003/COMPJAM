@@ -40,12 +40,56 @@ BARS_DECAY_RATE = 6.0           # Pontos de "Força" perdidos por segundo
 CIGS_RECHARGE_RATE = 20.0       # Pontos de "Fôlego" ganhos por segundo ao estar no cigarro
 BARS_RECHARGE_RATE = 25.0       # Pontos de "Força" ganhos por segundo ao estar na barra
 
-# --- IA do Inimigo (opcionais; já têm defaults no enemy.py) ---
-ENEMY_HEARING_BASE = 220           # raio de audição parado/andando
-ENEMY_HEARING_RUN  = 340           # raio de audição correndo (player rápido)
-ENEMY_LEAD_TIME    = 0.35          # segundos à frente para predição do alvo
-ENEMY_SEARCH_TIME  = 6.0           # quanto tempo vasculha após perder o player
-ENEMY_SEARCH_RADIUS_TILES = 6      # raio (em tiles) do “círculo” de busca
-ENEMY_PATROL_PAUSE_MINMAX = (0.5, 1.2)
-ENEMY_PATH_RECALC  = 0.35          # recálculo de A* (s)
-ENEMY_FEELER_LEN   = 18            # comprimento dos “bigodes” anti-raspagem
+# --- IA do Inimigo (MODO PESADELO) ---
+ENEMY_HEARING_BASE = 320           # Ouve o jogador a uma distância muito maior
+ENEMY_HEARING_RUN  = 450           # Correr agora é quase um convite para ser pego
+ENEMY_LEAD_TIME    = 0.60          # Predição de movimento quase perfeita, antecipa muito bem as fugas
+ENEMY_SEARCH_TIME  = 12.0          # Dobro do tempo de busca; ele não desiste fácil
+ENEMY_SEARCH_RADIUS_TILES = 10     # Vasculha uma área enorme depois de perder o jogador
+ENEMY_PATROL_PAUSE_MINMAX = (0.1, 0.2) # Praticamente não para de se mover durante a patrulha
+ENEMY_PATH_RECALC  = 0.15          # Reage a mudanças de direção quase que instantaneamente
+ENEMY_FEELER_LEN   = 22            # Mais eficiente em contornar obstáculos sem se prender
+
+# --- Níveis de Dificuldade ---
+DIFFICULTY_LEVELS = {
+    "Fácil": {
+        "ENEMY_SPEED": 175,
+        "ENEMY_TURN_SPEED": 2.6,
+        "FOV_DEGREES": 72,
+        "FOV_RANGE": 235,
+        "ENEMY_HEARING_BASE": 330,
+        "ENEMY_HEARING_RUN": 460,
+        "ENEMY_LEAD_TIME": 0.40,
+        "ENEMY_SEARCH_TIME": 12.0,
+        "ENEMY_SEARCH_RADIUS_TILES": 10,
+        "ENEMY_PATH_RECALC": 0.22,
+        "ENEMY_FEELER_LEN": 28,
+    },
+    "Normal": {
+        "ENEMY_SPEED": 195,
+        "ENEMY_TURN_SPEED": 2.9,
+        "FOV_DEGREES": 78,
+        "FOV_RANGE": 250,
+        "ENEMY_HEARING_BASE": 360,
+        "ENEMY_HEARING_RUN": 490,
+        "ENEMY_LEAD_TIME": 0.55,
+        "ENEMY_SEARCH_TIME": 14.0,
+        "ENEMY_SEARCH_RADIUS_TILES": 12,
+        "ENEMY_PATH_RECALC": 0.18,
+        "ENEMY_FEELER_LEN": 30,
+    },
+    "Pesadelo": {
+        "ENEMY_SPEED": 200,
+        "ENEMY_TURN_SPEED": 3.0,
+        "FOV_DEGREES": 80,
+        "FOV_RANGE": 250,
+        "ENEMY_HEARING_BASE": 380,
+        "ENEMY_HEARING_RUN": 500,
+        "ENEMY_LEAD_TIME": 0.75,
+        "ENEMY_SEARCH_TIME": 15.0,
+        "ENEMY_SEARCH_RADIUS_TILES": 12,
+        "ENEMY_PATH_RECALC": 0.10,
+        "ENEMY_FEELER_LEN": 25,
+    }
+}
+
