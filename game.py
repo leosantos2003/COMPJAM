@@ -103,6 +103,11 @@ class Game:
         except pygame.error as e:
             print(f"Aviso: Não foi possível carregar um ou mais efeitos sonoros: {e}")
         # ---------------------------------------------------
+
+        # --- Variáveis para a nova sequência de Game Over ---
+        self.game_over_sequence_active = False
+        self.game_over_timer = 0.0
+        # --------------------------------------------------
         
 
     def _draw_menu_options(self, options, selected_option, start_y, line_spacing=70):
@@ -224,7 +229,7 @@ class Game:
         waiting_for_input = True
         while waiting_for_input:
             self.clock.tick(FPS)
-            self.screen.fill(BLACK)
+            self.screen.fill(OXFORDBLUE) #*************************
             self.screen.blit(title_surf, title_rect)
 
             self._draw_menu_options(options, selected_option, start_y=SCREEN_HEIGHT / 2)
@@ -316,6 +321,17 @@ class Game:
                     pygame.mixer.music.fadeout(1000) # <-- ADICIONE AQUI
 
     def update(self):
+        # --- LÓGICA DA SEQUÊNCIA DE GAME OVER ---
+        # Se a sequência estiver ativa, apenas o timer é contado.
+        if self.game_over_sequence_active:
+            self.game_over_timer -= self.dt
+            if self.game_over_timer <= 0:
+                # O tempo acabou, então o jogo realmente termina
+                self.game_over_sequence_active = False
+                self.result = "lose"
+                self.playing = False
+            return # Pula o resto da lógica de update para "congelar" o jogo
+        # ----------------------------------------
         # Lógica do efeito "CHAPADO" (só ativa se HERB_ENABLED for True)
         if HERB_ENABLED and self.chapado_effect_active:
             self.chapado_timer -= self.dt
@@ -327,8 +343,13 @@ class Game:
             self.bars_level -= BARS_DECAY_RATE * self.dt
 
         if (self.cigs_level <= 0 or self.bars_level <= 0) and not self.result:
-            self.result = "lose"; self.playing = False
-            pygame.mixer.music.fadeout(1000) # <-- ADICIONE AQUI
+            # Perder por status inicia a sequência também
+            if not self.game_over_sequence_active:
+                self.game_over_sequence_active = True
+                self.game_over_timer = 1.0
+                pygame.mixer.music.fadeout(1000)
+                if self.smoking_sound: self.smoking_sound.stop()
+                if self.pullup_sound: self.pullup_sound.stop()
 
         self.player.update(self.dt, self.solids)
         self.enemy.update(self.dt, self.player, self.solids, self.game_map)
@@ -417,9 +438,18 @@ class Game:
         self.cigs_level = clamp(self.cigs_level, 0, MAX_STAT_LEVEL)
         self.bars_level = clamp(self.bars_level, 0, MAX_STAT_LEVEL)
 
+        # Se o inimigo vê o jogador, a sequência começa
         if self.enemy.sees(self.player, self.solids) and not self.result:
-            self.result = "lose"; self.playing = False
-            pygame.mixer.music.fadeout(1000) # <-- E ADICIONE AQUI
+            if not self.game_over_sequence_active:
+                self.game_over_sequence_active = True
+                self.game_over_timer = 1.0 # Duração de 1 segundo
+                
+                # Para todos os sons
+                pygame.mixer.music.fadeout(1000)
+                if self.smoking_sound: self.smoking_sound.stop()
+                if self.pullup_sound: self.pullup_sound.stop()
+                if self.jumpscare_sound: self.jumpscare_sound.play() # Um bom lugar para o susto!
+        # ----------------------------------------
         
         # Atualiza a pontuação baseada no tempo
         if self.playing:
@@ -531,6 +561,16 @@ class Game:
             # Limpa a tela antes de desenhar a cópia deslocada para evitar rastros
             self.screen.fill(BLACK)
             self.screen.blit(temp_surface, (offset_x, offset_y))
+
+        # --- EFEITO VERMELHO NO JOGADOR DURANTE O GAME OVER ---
+        if self.game_over_sequence_active:
+            # Cria uma cópia da imagem atual do jogador
+            player_image_copy = self.player.image.copy()
+            # Pinta a cópia de vermelho, mantendo a transparência
+            player_image_copy.fill(RED, special_flags=pygame.BLEND_RGB_MULT)
+            # Desenha a versão vermelha por cima da original
+            self.screen.blit(player_image_copy, self.player.rect)
+        # ----------------------------------------------------
 
         pygame.display.flip()
 

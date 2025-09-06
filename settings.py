@@ -16,6 +16,8 @@ BLUE  = (0, 0, 255)
 YELLOW = (255, 255, 0)
 GRAY  = (120, 120, 120)
 CYAN  = (0, 200, 200)
+DARKBLUE = (0, 0, 139)
+OXFORDBLUE = (0, 21, 64)
 
 # Grid / sprites
 TILE = 32
