@@ -1,13 +1,14 @@
-# game.py CORRIGIDO
+# game.py RESOLVIDO
 
 import pygame
 import sys
 import time
 import random
+import math
 from settings import *
 from player import Player
 from enemy import Enemy
-from items import Cigarette, PullUpBar
+from items import Cigarette, PullUpBar, Herb
 from map import Map
 from utils import clamp, load_spritesheet_grid
 
@@ -56,6 +57,11 @@ class Game:
         self.aura_active = False
         self.aura_timer = 0
         self.aura_duration = 1.0 # Duração em segundos
+
+        # Efeito "CHAPADO"
+        self.chapado_effect_active = False
+        self.chapado_timer = 0
+        self.chapado_duration = 5.0 # 5 segundos
 
         self.maps = ["map.txt", "map2.txt", "map3.txt"]
         self.score = 0
@@ -143,6 +149,7 @@ class Game:
         self.all_sprites = pygame.sprite.Group()
         self.items = pygame.sprite.Group()
         self.bars = pygame.sprite.Group()
+        self.herbs = pygame.sprite.Group() # Grupo para o novo item
         self.enemies = pygame.sprite.Group()
 
         self.game_map = Map(map_file)
@@ -174,10 +181,12 @@ class Game:
             self.events()
             self.update()
             self.draw()
-        
+
+        # Quando o loop de jogo (self.playing) termina, decide o que fazer a seguir
         if self.result == "lose":
-            return self.death_screen()
-        
+            return self.death_screen() # Retorna a ação escolhida pelo usuário ("restart", "menu" ou "quit")
+
+        # Se o jogo terminou por outro motivo (ex: ESC), volta ao menu
         return "menu"
 
 
@@ -191,8 +200,16 @@ class Game:
                     self.playing = False
 
     def update(self):
-        self.cigs_level -= CIGS_DECAY_RATE * self.dt
-        self.bars_level -= BARS_DECAY_RATE * self.dt
+        # Lógica do efeito "CHAPADO" (só ativa se HERB_ENABLED for True)
+        if HERB_ENABLED and self.chapado_effect_active:
+            self.chapado_timer -= self.dt
+            if self.chapado_timer <= 0:
+                self.chapado_effect_active = False
+        else:
+            # Só decai as barras se não estiver "chapado"
+            self.cigs_level -= CIGS_DECAY_RATE * self.dt
+            self.bars_level -= BARS_DECAY_RATE * self.dt
+
         if (self.cigs_level <= 0 or self.bars_level <= 0) and not self.result:
             self.result = "lose"; self.playing = False
 
@@ -211,6 +228,43 @@ class Game:
         if pygame.sprite.spritecollide(self.player, self.bars, dokill=False):
             self.bars_level += BARS_RECHARGE_RATE * self.dt
             self.is_doing_pullups = True
+
+        # Lógica do Herb (só executa se HERB_ENABLED for True)
+        if HERB_ENABLED:
+            # Colisão com o Herb
+            herb_collisions = pygame.sprite.spritecollide(self.player, self.herbs, dokill=True)
+            if herb_collisions:
+                self.chapado_effect_active = True
+                self.chapado_timer = self.chapado_duration
+
+            # Spawn aleatório do Herb com verificação de colisão
+            if random.random() < HERB_SPAWN_CHANCE:
+                if len(self.herbs) == 0:
+                    
+                    # Loop para encontrar uma posição válida
+                    while True:
+                        x = random.randint(50, SCREEN_WIDTH - 50)
+                        y = random.randint(50, SCREEN_HEIGHT - 50)
+                        
+                        # Cria um retângulo de teste na posição aleatória
+                        temp_rect = pygame.Rect(0, 0, TILE, TILE)
+                        temp_rect.center = (x, y)
+                        
+                        # Verifica se há colisão com algum sólido
+                        collides = False
+                        for solid in self.solids:
+                            if temp_rect.colliderect(solid.rect):
+                                collides = True
+                                break
+                        
+                        # Se não houver colisão, a posição é válida e o loop termina
+                        if not collides:
+                            break
+                            
+                    # Cria o item na posição válida encontrada
+                    h = Herb(x, y)
+                    self.all_sprites.add(h)
+                    self.herbs.add(h)
 
         just_started_smoking = self.is_smoking and not was_smoking
         just_started_pullups = self.is_doing_pullups and not was_doing_pullups
@@ -231,6 +285,7 @@ class Game:
         if self.enemy.sees(self.player, self.solids) and not self.result:
             self.result = "lose"; self.playing = False
         
+        # Atualiza a pontuação baseada no tempo
         if self.playing:
             self.score = int(time.time() - self.start_time)
 
@@ -252,7 +307,15 @@ class Game:
         pygame.draw.rect(self.screen, GRAY, pygame.Rect(forca_bar_x, forca_bar_y, BAR_LENGTH, BAR_HEIGHT))
         pygame.draw.rect(self.screen, CYAN, pygame.Rect(forca_bar_x, forca_bar_y, fill_width_forca, BAR_HEIGHT))
         forca_text = self.hud_font.render("Faça mais barras!", True, WHITE); self.screen.blit(forca_text, (forca_bar_x + 5, forca_bar_y + 4))
-        
+
+        # HUD do efeito "CHAPADO" (só desenha se HERB_ENABLED for True)
+        if HERB_ENABLED and self.chapado_effect_active:
+            chapado_text = self.hud_font.render("CHAPADO", True, GREEN)
+            self.screen.blit(chapado_text, (folego_bar_x, folego_bar_y + BAR_HEIGHT + 5))
+            
+            timer_chapado_text = self.hud_font.render(f"{self.chapado_timer:.1f}s", True, WHITE)
+            self.screen.blit(timer_chapado_text, (forca_bar_x, forca_bar_y + BAR_HEIGHT + 5))
+
         timer_text = self.timer_font.render(f"Tempo: {self.score}", True, WHITE)
         timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH / 2, 30))
         self.screen.blit(timer_text, timer_rect)
@@ -263,13 +326,15 @@ class Game:
         self.all_sprites.draw(self.screen)
         self.enemy.draw_fov(self.screen, self.solids)
         self.draw_hud()
-        
+
+        # --- Legenda do Inspetor ---
         texto_legenda_inimigo = self.enemy.name
         legenda_surface_inimigo = self.hud_font.render(texto_legenda_inimigo, True, WHITE)
         legenda_rect_inimigo = legenda_surface_inimigo.get_rect()
         legenda_rect_inimigo.midbottom = self.enemy.rect.midtop - pygame.math.Vector2(0, 5)
         self.screen.blit(legenda_surface_inimigo, legenda_rect_inimigo)
-        
+
+        # --- Legenda e Animação de Ação do Jogador ---
         texto_legenda_jogador = None
         animation_frame = None
 
@@ -301,24 +366,38 @@ class Game:
             legenda_rect_jogador.midbottom = self.player.rect.midtop - pygame.math.Vector2(0, 5)
             self.screen.blit(legenda_surface_jogador, legenda_rect_jogador)
             
+            # Se houver uma animação, desenha ela ACIMA da legenda de texto
             if animation_frame:
-                anim_size = (108, 84) 
+                # Define um tamanho menor para a animação sobre o jogador
+                anim_size = (108, 84)
                 scaled_frame = pygame.transform.smoothscale(animation_frame, anim_size)
                 anim_rect = scaled_frame.get_rect()
                 anim_rect.midbottom = legenda_rect_jogador.midtop - pygame.math.Vector2(0, 3)
                 self.screen.blit(scaled_frame, anim_rect)
 
         if self.aura_active:
-            aura_offset_y = 10 
+            # Posição da imagem da aura: abaixo do jogador
+            aura_offset_y = 10
             aura_rect = self.aura_image.get_rect(midtop=(self.player.rect.centerx, self.player.rect.bottom + aura_offset_y))
             self.screen.blit(self.aura_image, aura_rect)
 
-            text_offset_y = 5 
+            # Posição do texto da aura: abaixo da imagem da aura
+            text_offset_y = 5
             aura_text_surf = self.hud_font.render("+AURA +EGO", True, WHITE)
             aura_text_rect = aura_text_surf.get_rect(midtop=(aura_rect.centerx, aura_rect.bottom + text_offset_y))
             self.screen.blit(aura_text_surf, aura_text_rect)
 
+        # Efeito "wiggly" da tontura (só aplica se HERB_ENABLED for True)
+        if HERB_ENABLED and self.chapado_effect_active:
+            temp_surface = self.screen.copy()
+            offset_x = int(math.sin(time.time() * 15) * 5) # Ondulação horizontal
+            offset_y = int(math.cos(time.time() * 13) * 5) # Ondulação vertical
+            # Limpa a tela antes de desenhar a cópia deslocada para evitar rastros
+            self.screen.fill(BLACK)
+            self.screen.blit(temp_surface, (offset_x, offset_y))
+
         pygame.display.flip()
+
 
     def death_screen(self):
         # Prepara os elementos estáticos uma vez fora do loop
@@ -361,7 +440,7 @@ class Game:
                         return "restart" if selected_option == 0 else "menu"
 
             pygame.display.flip()
-        
+
         return "quit"
 
     def quit(self):

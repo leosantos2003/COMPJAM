@@ -1,3 +1,5 @@
+# settings.py RESOLVIDO
+
 # Configurações da tela
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
@@ -17,6 +19,10 @@ CYAN  = (0, 200, 200)
 
 # Grid / sprites
 TILE = 32
+
+# HUD
+BAR_LENGTH = 200
+BAR_HEIGHT = 25
 
 # Jogador
 PLAYER_SPEED = 300  # px/s
@@ -39,6 +45,9 @@ BARS_DECAY_RATE = 8.0           # Pontos de "Força" perdidos por segundo
 
 CIGS_RECHARGE_RATE = 20.0       # Pontos de "Fôlego" ganhos por segundo ao estar no cigarro
 BARS_RECHARGE_RATE = 25.0       # Pontos de "Força" ganhos por segundo ao estar na barra
+
+# --- Adicionado para o item "Herb" ---
+HERB_ENABLED = True # Defina como False para desativar completamente o item "herb" e seus efeitos
 
 # --- IA do Inimigo (MODO PESADELO) ---
 ENEMY_HEARING_BASE = 320           # Ouve o jogador a uma distância muito maior
@@ -92,7 +101,3 @@ DIFFICULTY_LEVELS = {
         "ENEMY_FEELER_LEN": 25,
     }
 }
-
-# HUD
-BAR_LENGTH = 200
-BAR_HEIGHT = 25
