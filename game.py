@@ -88,6 +88,20 @@ class Game:
             print(f"Aviso: Não foi possível carregar a música de fundo: {e}")
         # -------------------------------------------
 
+        # --- CÓDIGO NOVO PARA CARREGAR OS EFEITOS SONOROS ---
+        self.smoking_sound = None
+        self.pullup_sound = None
+        try:
+            self.smoking_sound = pygame.mixer.Sound('audio/smoking_loop.wav')
+            self.smoking_sound.set_volume(0.6)
+            self.pullup_sound = pygame.mixer.Sound('audio/pullup_loop.wav')
+            self.pullup_sound.set_volume(0.6)
+            print("Efeitos sonoros carregados.")
+        except pygame.error as e:
+            print(f"Aviso: Não foi possível carregar um ou mais efeitos sonoros: {e}")
+        # ---------------------------------------------------
+        
+
     def _draw_menu_options(self, options, selected_option, start_y, line_spacing=70):
         """
         Desenha uma lista de opções de menu na tela, aplicando efeitos de seleção
