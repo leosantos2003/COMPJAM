@@ -224,7 +224,7 @@ class Game:
         timer_rect = timer_text.get_rect(center=(SCREEN_WIDTH / 2, 30))
         self.screen.blit(timer_text, timer_rect)
 
-
+    """
     def draw_status_animations(self):
         if self.is_smoking:
             self.smoke_anim_timer += self.dt
@@ -249,15 +249,16 @@ class Game:
             col = self.bar_anim_index % len(self.bar_frames[0])
             frame = self.bar_frames[row][col]
             self.screen.blit(pygame.transform.smoothscale(frame, (150, 78)), (SCREEN_WIDTH - 165, 15))
+    """
 
     def draw(self):
-        self.game_map.draw(self.screen)
+        self.game_map.draw(self.screen)  # fundo + tiles
         self.all_sprites.draw(self.screen)
         self.enemy.draw_fov(self.screen)
         self.draw_hud()
-        self.draw_status_animations()
+        # A chamada para self.draw_status_animations() foi removida daqui
 
-        # --- CÓDIGO DA LEGENDA DO INSPETOR (já existente) ---
+        # --- Legenda do Inspetor ---
         texto_legenda_inimigo = self.enemy.name
         cor_legenda_inimigo = WHITE
         legenda_surface_inimigo = self.font.render(texto_legenda_inimigo, True, cor_legenda_inimigo)
@@ -265,26 +266,51 @@ class Game:
         legenda_rect_inimigo.midbottom = self.enemy.rect.midtop - pygame.math.Vector2(0, 5)
         self.screen.blit(legenda_surface_inimigo, legenda_rect_inimigo)
         
-        # --- CÓDIGO ADICIONADO PARA A LEGENDA DE AÇÃO DO JOGADOR ---
-        texto_legenda_jogador = None  # Começa sem texto
+        # --- Legenda e Animação de Ação do Jogador ---
+        texto_legenda_jogador = None
+        animation_frame = None
 
-        # 1. Verifica o estado do jogador e define o texto apropriado
         if self.is_smoking:
             texto_legenda_jogador = "Fumando..."
+            # Lógica da animação de FUMAR movida para cá
+            self.smoke_anim_timer += self.dt
+            if self.smoke_anim_timer > self.anim_speed:
+                self.smoke_anim_timer = 0
+                total_smoke_frames = len(self.smoke_frames) * len(self.smoke_frames[0])
+                self.smoke_anim_index = (self.smoke_anim_index + 1) % total_smoke_frames
+            row = self.smoke_anim_index // len(self.smoke_frames[0])
+            col = self.smoke_anim_index % len(self.smoke_frames[0])
+            animation_frame = self.smoke_frames[row][col]
+
         elif self.is_doing_pullups:
             texto_legenda_jogador = "Fazendo barra fixa..."
+            # Lógica da animação de BARRA movida para cá
+            self.bar_anim_timer += self.dt
+            if self.bar_anim_timer > self.anim_speed:
+                self.bar_anim_timer = 0
+                total_bar_frames = len(self.bar_frames) * len(self.bar_frames[0])
+                self.bar_anim_index = (self.bar_anim_index + 1) % total_bar_frames
+            row = self.bar_anim_index // len(self.bar_frames[0])
+            col = self.bar_anim_index % len(self.bar_frames[0])
+            animation_frame = self.bar_frames[row][col]
 
-        # 2. Se houver um texto para mostrar, desenha a legenda
         if texto_legenda_jogador:
-            cor_legenda_jogador = WHITE  # Uma cor diferente para destacar a ação
+            # Desenha a legenda de texto
+            cor_legenda_jogador = GREEN
             legenda_surface_jogador = self.font.render(texto_legenda_jogador, True, cor_legenda_jogador)
             legenda_rect_jogador = legenda_surface_jogador.get_rect()
-            
-            # Posiciona a legenda acima do jogador, assim como a do inspetor
             legenda_rect_jogador.midbottom = self.player.rect.midtop - pygame.math.Vector2(0, 5)
-            
             self.screen.blit(legenda_surface_jogador, legenda_rect_jogador)
-        # --------------------------------------------------------------------
+            
+            # Se houver uma animação, desenha ela ACIMA da legenda de texto
+            if animation_frame:
+                # Define um tamanho menor para a animação sobre o jogador
+                anim_size = (96, 72) 
+                scaled_frame = pygame.transform.smoothscale(animation_frame, anim_size)
+                anim_rect = scaled_frame.get_rect()
+                # Posiciona a animação acima da legenda
+                anim_rect.midbottom = legenda_rect_jogador.midtop - pygame.math.Vector2(0, 3)
+                self.screen.blit(scaled_frame, anim_rect)
 
         pygame.display.flip()
 
