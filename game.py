@@ -44,9 +44,9 @@ class Game:
         self.enemy_move_speed = ENEMY_SPEED
         self.enemy_turn_speed = ENEMY_TURN_SPEED
 
-        self.cigs_collected = 0
-        self.bars_done = 0
-        self.time_left = ROUND_TIME
+        # OBJETIVOS E ESTADO (LÓGICA ALTERADA)
+        self.cigs_level = MAX_STAT_LEVEL  # Começa com Fôlego no máximo
+        self.bars_level = MAX_STAT_LEVEL  # Começa com Força no máximo
         self.playing = True
         self.result = None
 
@@ -85,69 +85,85 @@ class Game:
                 self.enemy_turn_speed = clamp(self.enemy_turn_speed, 1.0, 10.0)
 
     def update(self):
-        self.time_left -= self.dt
-        if self.time_left <= 0 and not self.result:
+        # 1. APLICAR DECAIMENTO CONSTANTE
+        self.cigs_level -= CIGS_DECAY_RATE * self.dt
+        self.bars_level -= BARS_DECAY_RATE * self.dt
+
+        # 2. VERIFICAR CONDIÇÃO DE DERROTA (se alguma barra zerar)
+        if (self.cigs_level <= 0 or self.bars_level <= 0) and not self.result:
             self.result = "lose"
             self.playing = False
-
-        # ATUALIZA AS VARIÁVEIS DO INIMIGO COM OS VALORES DO JOGO
-        self.enemy.move_speed = self.enemy_move_speed
-        self.enemy.turn_speed = self.enemy_turn_speed
-
+            
+        # Atualiza o jogador e o inimigo
         self.player.update(self.dt)
-        self.items.update(self.dt)
-        self.bars.update(self.dt)
         self.enemy.update(self.dt, self.player)
 
-        # ... (resto da lógica de update continua o mesmo) ...
-        got = pygame.sprite.spritecollide(self.player, self.items, dokill=True)
-        if got:
-            self.cigs_collected += len(got)
+        # 3. VERIFICAR RECARGA DE RECURSOS
+        # Checa colisão com cigarros para recarregar Fôlego
+        # IMPORTANTE: dokill=False para que os itens não desapareçam
+        cig_collisions = pygame.sprite.spritecollide(self.player, self.items, dokill=False)
+        if cig_collisions:
+            self.cigs_level += CIGS_RECHARGE_RATE * self.dt
 
-        colliding = pygame.sprite.spritecollide(self.player, self.bars, dokill=False)
-        for bar in self.bars:
-            if bar in colliding and bar.cooldown_timer <= 0:
-                bar.hold += self.dt
-                if bar.hold >= bar.hold_needed:
-                    self.bars_done += 1
-                    bar.on_count()
-            else:
-                if bar.cooldown_timer <= 0:
-                    bar.hold = 0.0
+        # Checa colisão com barras para recarregar Força
+        bar_collisions = pygame.sprite.spritecollide(self.player, self.bars, dokill=False)
+        if bar_collisions:
+            self.bars_level += BARS_RECHARGE_RATE * self.dt
 
+        # 4. GARANTIR QUE AS BARRAS NÃO ULTRAPASSEM OS LIMITES
+        self.cigs_level = clamp(self.cigs_level, 0, MAX_STAT_LEVEL)
+        self.bars_level = clamp(self.bars_level, 0, MAX_STAT_LEVEL)
+        
+        # visão do inimigo -> derrota (essa lógica continua igual)
         if self.enemy.sees(self.player) and not self.result:
             self.result = "lose"
             self.playing = False
-
-        if (self.cigs_collected >= NEEDED_CIGS and self.bars_done >= NEEDED_BARS and not self.result):
-            self.result = "win"
-            self.playing = False
-
-    # ... (função draw_bar_progress continua a mesma) ...
-    def draw_bar_progress(self, bar):
-        r = bar.rect
-        w = TILE
-        h = 6
-        x = r.centerx - w // 2
-        y = r.top - 12
-        pygame.draw.rect(self.screen, (30, 30, 30), (x, y, w, h))
-        prog = int(w * bar.progress_ratio())
-        pygame.draw.rect(self.screen, (0, 180, 0), (x, y, prog, h))
-        pygame.draw.rect(self.screen, (220, 220, 220), (x, y, w, h), 1)
+        
+        # A antiga condição de vitória foi removida, o jogo é de sobrevivência
 
     def draw_hud(self):
-        # Texto principal do HUD
-        txt = f"Cigarros: {self.cigs_collected}/{NEEDED_CIGS}  |  Barras: {self.bars_done}/{NEEDED_BARS}  |  Tempo: {int(self.time_left)}"
-        surf = self.font.render(txt, True, WHITE)
-        self.screen.blit(surf, (12, 10))
+        # --- Barra de Fôlego (Cigarros) ---
+        BAR_LENGTH = 200
+        BAR_HEIGHT = 25
         
-        # NOVO TEXTO PARA DIFICULDADE
-        # Usamos :.1f para formatar o número com 1 casa decimal
-        diff_txt = f"Dificuldade [Teclas 1-4]: Velocidade {self.enemy_move_speed} | Giro {self.enemy_turn_speed:.1f}"
-        diff_surf = self.font.render(diff_txt, True, CYAN)
-        # Posiciona abaixo da dica dos controles
-        tip_rect = self.screen.blit(self.font.render("Controles: WASD/Setas.", True, GRAY), (12, 40))
-        self.screen.blit(diff_surf, (12, tip_rect.bottom + 5))
+        # Posição da barra de Fôlego
+        folego_bar_x = 15
+        folego_bar_y = 15
+
+        # Calcula a largura da barra com base no nível atual
+        fill_width_folego = (self.cigs_level / MAX_STAT_LEVEL) * BAR_LENGTH
+        
+        # Desenha o fundo e o preenchimento da barra
+        background_rect_folego = pygame.Rect(folego_bar_x, folego_bar_y, BAR_LENGTH, BAR_HEIGHT)
+        fill_rect_folego = pygame.Rect(folego_bar_x, folego_bar_y, fill_width_folego, BAR_HEIGHT)
+
+        pygame.draw.rect(self.screen, GRAY, background_rect_folego)
+        pygame.draw.rect(self.screen, YELLOW, fill_rect_folego)
+        
+        # Texto da barra
+        folego_text = self.font.render("Fôlego", True, WHITE)
+        self.screen.blit(folego_text, (folego_bar_x + 5, folego_bar_y + 4))
+
+
+        # --- Barra de Força (Barras Fixas) ---
+        # Posição da barra de Força
+        forca_bar_x = 15
+        forca_bar_y = 50
+        
+        fill_width_forca = (self.bars_level / MAX_STAT_LEVEL) * BAR_LENGTH
+        
+        background_rect_forca = pygame.Rect(forca_bar_x, forca_bar_y, BAR_LENGTH, BAR_HEIGHT)
+        fill_rect_forca = pygame.Rect(forca_bar_x, forca_bar_y, fill_width_forca, BAR_HEIGHT)
+        
+        pygame.draw.rect(self.screen, GRAY, background_rect_forca)
+        pygame.draw.rect(self.screen, CYAN, fill_rect_forca)
+        
+        forca_text = self.font.render("Força", True, WHITE)
+        self.screen.blit(forca_text, (forca_bar_x + 5, forca_bar_y + 4))
+
+        # Dica de controles
+        tip = self.font.render("Fique nos itens para recuperar os status. Fuja do cone!", True, GRAY)
+        self.screen.blit(tip, (12, 90))
 
 
     def draw(self):
@@ -155,9 +171,6 @@ class Game:
         self.game_map.draw(self.screen)
         self.all_sprites.draw(self.screen)
         self.enemy.draw_fov(self.screen)
-        for bar in self.bars:
-            if bar.cooldown_timer <= 0 and bar.hold > 0:
-                self.draw_bar_progress(bar)
         self.draw_hud()
         pygame.display.flip()
 
