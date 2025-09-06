@@ -99,6 +99,8 @@ class Game:
             self.pullup_sound.set_volume(0.6)
             self.jumpscare_sound = pygame.mixer.Sound('audio/jumpscare.mp3') # <-- Adicione esta linha
             self.jumpscare_sound.set_volume(0.7) # <-- Adicione esta linha
+            self.caught_sound = pygame.mixer.Sound('audio/death_scream.mp3') # <-- Adicione esta linha
+            self.caught_sound.set_volume(0.8) # <-- Adicione esta linha (pode ajustar o volume)
             print("Efeitos sonoros carregados.")
         except pygame.error as e:
             print(f"Aviso: Não foi possível carregar um ou mais efeitos sonoros: {e}")
@@ -448,7 +450,13 @@ class Game:
                 pygame.mixer.music.fadeout(1000)
                 if self.smoking_sound: self.smoking_sound.stop()
                 if self.pullup_sound: self.pullup_sound.stop()
-                if self.jumpscare_sound: self.jumpscare_sound.play() # Um bom lugar para o susto!
+                # if self.jumpscare_sound: self.jumpscare_sound.play() # Um bom lugar para o susto!
+
+                # --- ALTERAÇÃO FEITA AQUI ---
+                # Trocamos o som de susto pelo novo som de captura
+                if self.caught_sound:
+                    self.caught_sound.play()
+                # ----------------------------
         # ----------------------------------------
         
         # Atualiza a pontuação baseada no tempo
