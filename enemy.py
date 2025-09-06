@@ -1,41 +1,46 @@
+# enemy.py
 import math
 import pygame
 from settings import *
 from utils import clamp
 
 class Enemy(pygame.sprite.Sprite):
-    def __init__(self, patrol_points):
+    def __init__(self, x, y):
         super().__init__()
         self.image = pygame.Surface((TILE, TILE))
         self.image.fill(RED)
-        self.rect = self.image.get_rect()
-        self.patrol = patrol_points[:]  # lista de (x, y) em pixels
-        self.i = 0
-        self.rect.center = self.patrol[self.i]
-        self.dir = pygame.math.Vector2(1, 0)  # direção "olhando"
+        self.rect = self.image.get_rect(center=(x, y))
+        self.dir = pygame.math.Vector2(1, 0)
         self.vel = pygame.math.Vector2(0, 0)
 
-    def update(self, dt):
-        # anda até o próximo ponto
-        target = pygame.math.Vector2(self.patrol[self.i])
-        pos = pygame.math.Vector2(self.rect.center)
-        delta = target - pos
-        dist = delta.length()
-        if dist > 2:
-            self.vel = delta.normalize() * ENEMY_SPEED
-            move = self.vel * dt
-            self.rect.centerx += move.x
-            self.rect.centery += move.y
-            if self.vel.length_squared() > 0:
-                self.dir = self.vel.normalize()
-        else:
-            # vai para o próximo e já define a direção para lá
-            self.i = (self.i + 1) % len(self.patrol)
-            nxt = pygame.math.Vector2(self.patrol[self.i]) - pygame.math.Vector2(self.rect.center)
-            if nxt.length_squared() > 0:
-                self.dir = nxt.normalize()
+        # VARIÁVEIS DE DIFICULDADE (serão controladas pela classe Game)
+        self.move_speed = ENEMY_SPEED
+        self.turn_speed = ENEMY_TURN_SPEED
 
-    # Checa se player está no cone de visão
+        self.target_pos = pygame.math.Vector2(x, y)
+        self.retarget_timer = 0.0
+
+    def update(self, dt, player):
+        self.retarget_timer -= dt
+        if self.retarget_timer <= 0:
+            self.retarget_timer = ENEMY_RETARGET_SECONDS
+            self.target_pos = pygame.math.Vector2(player.rect.center)
+
+        pos = pygame.math.Vector2(self.rect.center)
+        dist_to_target = (self.target_pos - pos).length()
+
+        if dist_to_target > TILE / 2:
+            target_dir = (self.target_pos - pos).normalize()
+            
+            # USA AS VARIÁVEIS DA INSTÂNCIA EM VEZ DAS CONSTANTES
+            self.dir = self.dir.slerp(target_dir, self.turn_speed * dt)
+            self.vel = self.dir * self.move_speed
+        else:
+            self.vel = pygame.math.Vector2(0, 0)
+        
+        self.rect.center += self.vel * dt
+
+    # Funções sees e draw_fov continuam iguais...
     def sees(self, player):
         to_player = pygame.math.Vector2(player.rect.center) - pygame.math.Vector2(self.rect.center)
         dist = to_player.length()
@@ -46,7 +51,6 @@ class Enemy(pygame.sprite.Sprite):
         angle = math.degrees(math.acos(clamp(dot, -1, 1)))
         return angle <= FOV_DEGREES / 2
 
-    # Desenho do cone (debug/feedback)
     def draw_fov(self, surface):
         origin = pygame.math.Vector2(self.rect.center)
         base_angle = math.degrees(math.atan2(self.dir.y, self.dir.x))
@@ -56,5 +60,3 @@ class Enemy(pygame.sprite.Sprite):
         right_vec = (math.cos(right_a)*FOV_RANGE, math.sin(right_a)*FOV_RANGE)
         pts = [origin, origin + left_vec, origin + right_vec]
         pygame.draw.polygon(surface, (255, 100, 100), pts, width=2)
-
-
