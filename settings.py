@@ -65,30 +65,30 @@ ENEMY_FEELER_LEN   = 22            # Mais eficiente em contornar obstáculos sem
 # --- Níveis de Dificuldade ---
 DIFFICULTY_LEVELS = {
     "Fácil": {
-        "ENEMY_SPEED": 175,
-        "ENEMY_TURN_SPEED": 2.6,
-        "FOV_DEGREES": 72,
-        "FOV_RANGE": 235,
-        "ENEMY_HEARING_BASE": 330,
-        "ENEMY_HEARING_RUN": 460,
-        "ENEMY_LEAD_TIME": 0.40,
-        "ENEMY_SEARCH_TIME": 12.0,
-        "ENEMY_SEARCH_RADIUS_TILES": 10,
-        "ENEMY_PATH_RECALC": 0.22,
-        "ENEMY_FEELER_LEN": 28,
+        "ENEMY_SPEED": 150,                # mais lento
+        "ENEMY_TURN_SPEED": 2.0,           # gira mais devagar
+        "FOV_DEGREES": 65,                 # campo de visão menor
+        "FOV_RANGE": 200,                  # enxerga menos longe
+        "ENEMY_HEARING_BASE": 280,         # ouve menos
+        "ENEMY_HEARING_RUN": 400,
+        "ENEMY_LEAD_TIME": 0.30,           # antecipa menos
+        "ENEMY_SEARCH_TIME": 8.0,          # procura por menos tempo
+        "ENEMY_SEARCH_RADIUS_TILES": 8,    # área de busca menor
+        "ENEMY_PATH_RECALC": 0.28,         # recalcula mais devagar
+        "ENEMY_FEELER_LEN": 26,
     },
     "Normal": {
-        "ENEMY_SPEED": 195,
-        "ENEMY_TURN_SPEED": 2.9,
-        "FOV_DEGREES": 78,
-        "FOV_RANGE": 250,
-        "ENEMY_HEARING_BASE": 360,
-        "ENEMY_HEARING_RUN": 490,
-        "ENEMY_LEAD_TIME": 0.55,
-        "ENEMY_SEARCH_TIME": 14.0,
-        "ENEMY_SEARCH_RADIUS_TILES": 12,
-        "ENEMY_PATH_RECALC": 0.18,
-        "ENEMY_FEELER_LEN": 30,
+        "ENEMY_SPEED": 175,                # levemente mais rápido que o fácil
+        "ENEMY_TURN_SPEED": 2.4,
+        "FOV_DEGREES": 72,
+        "FOV_RANGE": 225,
+        "ENEMY_HEARING_BASE": 320,
+        "ENEMY_HEARING_RUN": 450,
+        "ENEMY_LEAD_TIME": 0.45,
+        "ENEMY_SEARCH_TIME": 12.0,
+        "ENEMY_SEARCH_RADIUS_TILES": 10,
+        "ENEMY_PATH_RECALC": 0.20,
+        "ENEMY_FEELER_LEN": 28,
     },
     "Pesadelo": {
         "ENEMY_SPEED": 220,
