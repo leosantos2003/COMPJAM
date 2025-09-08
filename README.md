@@ -104,7 +104,19 @@ python main.py
 
 ## Screenshots
 
+<div style="display: flex; justify-content: center;">
+  <img style="width: 48%;" width="1814" height="1016" alt="Captura de tela 2025-09-07 235027" src="https://github.com/user-attachments/assets/171f1c91-0ea6-4d50-b56e-8a003fa2316d" />
+  <img style="width: 48%;" width="1792" height="1017" alt="Captura de tela 2025-09-07 235144" src="https://github.com/user-attachments/assets/456424fe-8f01-41fa-a467-3a1bd0833ffe" />
+</div>
+
+<div style="display: flex; justify-content: center;">
+  <img style="width: 48%;" width="1808" height="1019" alt="Captura de tela 2025-09-07 234933" src="https://github.com/user-attachments/assets/6ea60776-8684-4d2b-9847-308051590000" />
+  <img style="width: 48%;" width="1785" height="1015" alt="Captura de tela 2025-09-07 235254" src="https://github.com/user-attachments/assets/36b8fd8a-7651-4343-acc2-3803382f98e0" />
+</div>
+
 ## Video Demo
+
+https://github.com/user-attachments/assets/99acb532-b5d2-43cd-835f-dcf418309c4d
 
 ## License
 
