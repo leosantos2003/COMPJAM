@@ -126,4 +126,5 @@ Distributed under the MIT License. See `LICENSE.txt` for more information.
 ## Contact
 
 Leonardo Santos - <leorsantos2003@gmail.com>
+
 Erik Ratzlaff - <erikdr0404@gmail.com>
