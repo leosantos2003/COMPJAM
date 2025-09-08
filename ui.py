@@ -34,10 +34,6 @@ def get_player_name_input(game):
     return player_name
 
 def draw_menu_options(game, options, selected_option, start_y, line_spacing=60):
-    """
-    Desenha uma lista de opções de menu na tela, aplicando efeitos de seleção
-    e diferenciando cores para "Sair" e "Voltar ao Menu".
-    """
     for i, option_text in enumerate(options):
         is_selected = (i == selected_option)
         
@@ -58,9 +54,6 @@ def draw_menu_options(game, options, selected_option, start_y, line_spacing=60):
         game.screen.blit(text_surf, text_rect)
 
 def show_briefing_screen(game):
-    """
-    Mostra uma tela preta com frases sequenciais antes do início da partida.
-    """
     phrases = [
         "Você fumará todos os cigarros...",
         "Você usará todas as barras fixas...",
@@ -160,7 +153,10 @@ def show_leaderboard_screen(game):
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, 100))
         game.screen.blit(title_surf, title_rect)
 
-        leaderboard_list = game.leaderboard.get("Pesadelo", [])
+        # --- CORREÇÃO APLICADA AQUI ---
+        leaderboard_list = game.leaderboard_data.get("Pesadelo", [])
+        # -------------------------------
+
         if not leaderboard_list:
             no_scores_surf = game.menu_font_normal.render("Ainda não há pontuações.", True, GRAY)
             no_scores_rect = no_scores_surf.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2))
