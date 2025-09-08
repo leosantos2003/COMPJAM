@@ -7,7 +7,7 @@
 
 ## About
 
-In "Computer Science Student Simulator", you control a character who must survive in a hostile environment, not by fighting monsters, but by fighting their own "vices". The goal is to keep their status bars—Stamina and Strength—full while avoiding capture by the relentless Inspector General.
+In "Computer Science Student Simulator", you control a character who must survive in a hostile environment, not by fighting monsters, but by fighting their own "vices". The goal is to keep their status bars - Stamina and Strength - full while avoiding capture by the relentless Inspector General.
 
 To recharge their status bars, the player must take risks by visiting cigarettes and pull-up bars scattered throughout the map. Each visit is a gamble, as it can put them directly in the inspector's crosshairs.
 
