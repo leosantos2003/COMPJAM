@@ -1,5 +1,5 @@
 <div align="center">
-  <img width="641" height="552" alt="geralzao" src="https://github.com/user-attachments/assets/e730f2ae-c695-49c3-91df-c5af1fc4f813" />
+  <img width="160" height="138" alt="geralzao" src="https://github.com/user-attachments/assets/e730f2ae-c695-49c3-91df-c5af1fc4f813" />
   
   # CS Student Simulator
   
