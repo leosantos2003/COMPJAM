@@ -1,4 +1,5 @@
 <div align="center">
+  <img width="641" height="552" alt="geralzao" src="https://github.com/user-attachments/assets/e730f2ae-c695-49c3-91df-c5af1fc4f813" />
   
   # CS Student Simulator
   
@@ -120,4 +121,9 @@ https://github.com/user-attachments/assets/99acb532-b5d2-43cd-835f-dcf418309c4d
 
 ## License
 
+Distributed under the MIT License. See `LICENSE.txt` for more information.
+
 ## Contact
+
+Leonardo Santos - <leorsantos2003@gmail.com>
+Erik Ratzlaff - <erikdr0404@gmail.com>
