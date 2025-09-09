@@ -1,3 +1,4 @@
+# player.py (Atualizado para permitir movimento livre no mapa)
 import pygame
 from settings import *
 from utils import clamp, _rect_of, load_spritesheet_grid
@@ -43,7 +44,6 @@ class Player(pygame.sprite.Sprite):
         self.vx = self.vy = 0.0
         keys = pygame.key.get_pressed()
 
-        # Movimento pelo Teclado
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
             self.vx = -PLAYER_SPEED
             self.direction = 'left'
@@ -55,7 +55,6 @@ class Player(pygame.sprite.Sprite):
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.vy = PLAYER_SPEED
 
-        # --- LÓGICA ATUALIZADA PARA O JOYSTICK ---
         if self.game.joysticks:
             joystick = self.game.joysticks[0]
             
@@ -72,7 +71,6 @@ class Player(pygame.sprite.Sprite):
                 self.vy = -PLAYER_SPEED
             elif axis_y > 0.5:
                 self.vy = PLAYER_SPEED
-        # --- FIM DA LÓGICA ATUALIZADA ---
 
         if self.vx and self.vy:
             self.vx *= 0.7071
@@ -98,11 +96,6 @@ class Player(pygame.sprite.Sprite):
         self.image = pygame.transform.flip(scaled, True, False) if self.direction == 'left' else scaled
         self.rect = self.image.get_rect(midbottom=old_midbottom)
 
-    def _clamp_pos(self):
-        half_w = self.rect.width * 0.5
-        self.pos.x = clamp(self.pos.x, half_w, SCREEN_WIDTH - half_w)
-        self.pos.y = clamp(self.pos.y, self.rect.height, SCREEN_HEIGHT)
-
     def _collide_axis(self, solids, axis):
         for s in solids:
             r = _rect_of(s)
@@ -126,14 +119,17 @@ class Player(pygame.sprite.Sprite):
         self.get_keys()
         self._set_state()
 
+        # --- LÓGICA DE MOVIMENTO ATUALIZADA ---
+        # A verificação de limites da tela (_clamp_pos) foi removida.
+        
+        # Eixo X
         self.pos.x += self.vx * dt
-        self._clamp_pos()
         self.rect.midbottom = (int(self.pos.x), int(self.pos.y))
         self.hitbox.midbottom = self.rect.midbottom
         self._collide_axis(solids, "x")
 
+        # Eixo Y
         self.pos.y += self.vy * dt
-        self._clamp_pos()
         self.rect.midbottom = (int(self.pos.x), int(self.pos.y))
         self.hitbox.midbottom = self.rect.midbottom
         self._collide_axis(solids, "y")

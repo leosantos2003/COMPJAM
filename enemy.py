@@ -1,4 +1,4 @@
-# enemy.py
+# enemy.py (Atualizado para desenhar FOV com a câmera)
 import math
 import random
 import pygame
@@ -22,7 +22,6 @@ class Enemy(pygame.sprite.Sprite):
         self.rect = self.image.get_rect(center=(x, y))
 
         self.name = "Geralzão"
-
         self.dir = pygame.math.Vector2(1, 0)
         self.vel = pygame.math.Vector2(0, 0)
 
@@ -31,6 +30,7 @@ class Enemy(pygame.sprite.Sprite):
 
         self.move_speed = difficulty["ENEMY_SPEED"]
         self.turn_speed = difficulty["ENEMY_TURN_SPEED"]
+        # ... (resto dos atributos)
         self.FOV_DEGREES = difficulty["FOV_DEGREES"]
         self.FOV_RANGE = difficulty["FOV_RANGE"]
         self.HEARING_BASE = difficulty["ENEMY_HEARING_BASE"]
@@ -42,28 +42,23 @@ class Enemy(pygame.sprite.Sprite):
         self.FEELER = difficulty["ENEMY_FEELER_LEN"]
 
         self.target_pos = pygame.math.Vector2(self.rect.center)
-
         self.state = 'patrol'
         self.state_timer = 0.0
         self.pause_timer = 0.0
-
         self.last_seen_pos = None
         self.last_seen_timer = 0.0
         self.last_heard_pos = None
         self.last_heard_timer = 0.0
-
         self.path = []
         self.path_recalc_cooldown = 0.0
-
         self.last_center = pygame.math.Vector2(self.rect.center)
         self.stuck_timer = 0.0
-
         self._patrol_points = []
         self._current_patrol_idx = 0
-
         self.PATROL_PAUSE_MINMAX = globals().get('ENEMY_PATROL_PAUSE_MINMAX', (0.5, 1.2))
         self.WAYPOINT_EPS = TILE * 0.25
 
+    # ... (todos os métodos de IA permanecem iguais) ...
     def _need_recalc(self, player_tile):
         if not self.path:
             return True
@@ -259,15 +254,23 @@ class Enemy(pygame.sprite.Sprite):
             self.dir.rotate_ip(90 if self.dir.x >= 0 else -90)
             self.path_recalc_cooldown = 0.0
             self.stuck_timer = 0.0
-
-    def draw_fov(self, surface, solids):
+            
+    # --- MÉTODO 'draw_fov' ATUALIZADO ---
+    def draw_fov(self, surface, solids, camera):
+        """Desenha o cone de visão (FOV) do inimigo."""
         fov_surface = pygame.Surface(surface.get_size(), pygame.SRCALPHA)
-        origin = self.rect.center
-        base_angle = math.degrees(math.atan2(self.dir.y, self.dir.x))
         
-        light_points = [origin]
+        # O offset da câmera
+        offset = pygame.math.Vector2(camera.camera.topleft)
+
+        # A origem do FOV é a posição do inimigo no mundo, deslocada pela câmera
+        origin_world = self.rect.center
+        origin_on_screen = pygame.math.Vector2(origin_world) + offset
+        
+        light_points = [origin_on_screen]
         num_rays = 50 
         
+        base_angle = math.degrees(math.atan2(self.dir.y, self.dir.x))
         start_angle = base_angle - self.FOV_DEGREES / 2
         end_angle = base_angle + self.FOV_DEGREES / 2
         
@@ -275,21 +278,22 @@ class Enemy(pygame.sprite.Sprite):
             angle = start_angle + (end_angle - start_angle) * i / num_rays
             rad_angle = math.radians(angle)
             
-            end_point = (origin[0] + math.cos(rad_angle) * self.FOV_RANGE,
-                         origin[1] + math.sin(rad_angle) * self.FOV_RANGE)
+            end_point_world = (origin_world[0] + math.cos(rad_angle) * self.FOV_RANGE,
+                               origin_world[1] + math.sin(rad_angle) * self.FOV_RANGE)
             
-            closest_intersection = end_point
+            closest_intersection = end_point_world
             min_dist_sq = self.FOV_RANGE**2
 
             for s in solids:
-                if (clipped_line := _rect_of(s).clipline(origin, end_point)):
+                if (clipped_line := _rect_of(s).clipline(origin_world, end_point_world)):
                     intersection_point = clipped_line[0]
-                    dist_sq = (intersection_point[0] - origin[0])**2 + (intersection_point[1] - origin[1])**2
+                    dist_sq = (intersection_point[0] - origin_world[0])**2 + (intersection_point[1] - origin_world[1])**2
                     if dist_sq < min_dist_sq:
                         min_dist_sq = dist_sq
                         closest_intersection = intersection_point
 
-            light_points.append(closest_intersection)
+            # Desloca o ponto de interseção pela câmera para desenhar na tela
+            light_points.append(pygame.math.Vector2(closest_intersection) + offset)
         
         if len(light_points) > 2:
             pygame.draw.polygon(fov_surface, (255, 255, 100, 80), light_points)

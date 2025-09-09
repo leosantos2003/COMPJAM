@@ -1,4 +1,4 @@
-# ui.py (Atualizado com menu de mapa comprimido)
+# ui.py (Controle por Joystick REIMPLEMENTADO)
 import pygame
 from settings import *
 
@@ -50,7 +50,6 @@ def draw_menu_options(game, options, selected_option, start_y, line_spacing=60, 
         else:
             color = GRAY
 
-        # --- LÓGICA ATUALIZADA PARA MOSTRAR TEXTO DO MENU ---
         if option_text == "Mapa":
             text_str = f"{arrow}Mapa: {current_map_index + 1}"
         elif option_text == "Dificuldade":
@@ -59,7 +58,6 @@ def draw_menu_options(game, options, selected_option, start_y, line_spacing=60, 
             text_str = f"{arrow}Volume: {int(game.volume * 100)}%"
         else:
             text_str = f"{arrow}{option_text}"
-        # ----------------------------------------------------
 
         text_surf = font.render(text_str, True, color)
         text_rect = text_surf.get_rect(center=(SCREEN_WIDTH / 2, start_y + i * line_spacing))
@@ -111,7 +109,7 @@ def show_briefing_screen(game):
 
         game.screen.blit(skip_surf, skip_rect)
         pygame.display.flip()
-
+        
 def show_menu_screen(game):
     title1_surf = game.title_font.render("Grand Theft Auto V: ", True, WHITE)
     title2_surf = game.title_font.render("INF Version", True, YELLOW)
@@ -120,8 +118,7 @@ def show_menu_screen(game):
     title1_rect = title1_surf.get_rect(x=start_x, centery=SCREEN_HEIGHT / 4)
     title2_rect = title2_surf.get_rect(x=title1_rect.right, centery=SCREEN_HEIGHT / 4)
     
-    # --- OPÇÕES ATUALIZADAS ---
-    options = ["Jogar", "Mapa", "Dificuldade", "Volume", "Leaderboard", "Sair"]
+    options = ["Jogar Mapa Estático", "Jogar Modo Infinito", "Mapa", "Dificuldade", "Volume", "Leaderboard", "Sair"]
     selected_option = 0
     current_map_index = 0
     
@@ -135,16 +132,16 @@ def show_menu_screen(game):
         game.screen.blit(title1_surf, title1_rect)
         game.screen.blit(title2_surf, title2_rect)
 
-        draw_menu_options(game, options, selected_option, start_y=SCREEN_HEIGHT / 2, current_map_index=current_map_index)
+        draw_menu_options(game, options, selected_option, start_y=SCREEN_HEIGHT / 2 - 50, current_map_index=current_map_index)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game.running = False
                 return None, None
             
-            # --- LÓGICA DE EVENTOS DO JOYSTICK ---
+            # --- LÓGICA DE EVENTOS DO JOYSTICK RESTAURADA ---
             if event.type == pygame.JOYAXISMOTION:
-                if event.axis == 1: # Eixo Vertical (Navegação)
+                if event.axis == 1:
                     if event.value < -0.5 and not joy_axis_moved_y:
                         selected_option = (selected_option - 1) % len(options)
                         if game.menu_nav_sound: game.menu_nav_sound.play()
@@ -156,7 +153,7 @@ def show_menu_screen(game):
                     elif -0.5 < event.value < 0.5:
                         joy_axis_moved_y = False
                 
-                if event.axis == 0: # Eixo Horizontal
+                if event.axis == 0:
                     if options[selected_option] == "Volume":
                         if event.value < -0.5 and not joy_axis_moved_x:
                             game.set_volume(game.volume - 0.1)
@@ -177,8 +174,10 @@ def show_menu_screen(game):
 
             if event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 0: # Botão A
-                    if options[selected_option] == "Jogar":
+                    if options[selected_option] == "Jogar Mapa Estático":
                         return game.maps[current_map_index], game.difficulty
+                    elif options[selected_option] == "Jogar Modo Infinito":
+                        return "procedural", game.difficulty
                     elif options[selected_option] == "Dificuldade":
                         levels = list(DIFFICULTY_LEVELS.keys())
                         current_idx = levels.index(game.difficulty)
@@ -188,6 +187,7 @@ def show_menu_screen(game):
                     elif options[selected_option] == "Sair":
                         game.running = False
                         return None, None
+            # ---------------------------------------------------
 
             # --- LÓGICA DE EVENTOS DO TECLADO ---
             if event.type == pygame.KEYDOWN:
@@ -211,8 +211,10 @@ def show_menu_screen(game):
                         current_map_index = (current_map_index + 1) % len(game.maps)
 
                 if event.key == pygame.K_RETURN:
-                    if options[selected_option] == "Jogar":
+                    if options[selected_option] == "Jogar Mapa Estático":
                         return game.maps[current_map_index], game.difficulty
+                    elif options[selected_option] == "Jogar Modo Infinito":
+                        return "procedural", game.difficulty
                     elif options[selected_option] == "Dificuldade":
                         levels = list(DIFFICULTY_LEVELS.keys())
                         current_idx = levels.index(game.difficulty)
@@ -268,7 +270,7 @@ def death_screen(game):
     death_rect = death_img.get_rect(center=(SCREEN_WIDTH / 2, SCREEN_HEIGHT * 0.4))
     
     score_surf = game.menu_font_normal.render(f"Pontuação Final: {game.score}", True, WHITE)
-    score_rect = score_surf.get_rect(center=(SCREEN_WIDTH / 2, death_rect.bottom + 60))
+    score_rect = score_surf.get_rect(center=(death_rect.centerx, death_rect.bottom + 60))
     
     opcoes_start_y = score_rect.bottom + 80
 

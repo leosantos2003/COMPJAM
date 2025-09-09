@@ -1,4 +1,4 @@
-# game.py (Corrigido, com Suporte a Joystick e Controle de Volume)
+# game.py (Atualizado com Câmera Condicional e Correção de Desenho do FOV)
 
 import pygame
 import sys
@@ -18,6 +18,7 @@ from animations import update_smoke_animation, update_bar_animation
 from asset_loader import load_assets
 import leaderboard
 import game_logic
+from camera import Camera
 
 class Game:
     def __init__(self):
@@ -40,10 +41,8 @@ class Game:
         self.assets = load_assets()
         self.map_assets_to_attributes()
 
-        # --- NOVA LÓGICA DE VOLUME ---
         self.volume = INITIAL_VOLUME
         self.set_volume(self.volume)
-        # -----------------------------
 
         self.maps = ["map.txt", "map2.txt", "map3.txt"]
         self.score = 0
@@ -55,27 +54,32 @@ class Game:
         self.game_over_timer = 0.0
 
     def map_assets_to_attributes(self):
-        """Mapeia o dicionário de assets para atributos de fácil acesso."""
         for key, value in self.assets.items():
             setattr(self, key, value)
 
     def set_volume(self, new_volume):
-        """Ajusta o volume da música e de todos os efeitos sonoros."""
         self.volume = clamp(new_volume, 0.0, 1.0)
         pygame.mixer.music.set_volume(self.volume)
         for asset in self.assets.values():
             if isinstance(asset, pygame.mixer.Sound):
                 asset.set_volume(self.volume)
 
-    def new(self, map_file, difficulty):
-        """Inicializa uma nova partida."""
+    def new(self, map_file=None, grid_data=None, difficulty="Normal"):
         self.all_sprites = pygame.sprite.Group()
         self.items = pygame.sprite.Group()
         self.bars = pygame.sprite.Group()
         self.herbs = pygame.sprite.Group()
         self.enemies = pygame.sprite.Group()
 
-        self.game_map = Map(map_file)
+        # --- LÓGICA DA CÂMERA CONDICIONAL ---
+        self.is_procedural_map = grid_data is not None
+        # ------------------------------------
+
+        if map_file:
+            self.game_map = Map(map_file=map_file)
+        elif grid_data:
+            self.game_map = Map(grid_data=grid_data)
+        
         self.solids = self.game_map.solids
 
         self.player = Player(self, 4, 5)
@@ -88,8 +92,23 @@ class Game:
             b = PullUpBar(*pos)
             self.all_sprites.add(b); self.bars.add(b)
 
-        self.enemy = Enemy(800, 400, difficulty=DIFFICULTY_LEVELS[difficulty])
+        floor_tiles = []
+        for j, row in enumerate(self.game_map.grid):
+            for i, char in enumerate(row):
+                if char == '.':
+                    player_dist_sq = (i - self.game_map.spawn_tile[0])**2 + (j - self.game_map.spawn_tile[1])**2
+                    if player_dist_sq > 100:
+                        floor_tiles.append((i * TILE + TILE // 2, j * TILE + TILE // 2))
+        
+        if floor_tiles:
+            enemy_pos = random.choice(floor_tiles)
+        else:
+            enemy_pos = (self.game_map.width_px / 2, self.game_map.height_px / 2)
+
+        self.enemy = Enemy(enemy_pos[0], enemy_pos[1], difficulty=DIFFICULTY_LEVELS[difficulty])
         self.all_sprites.add(self.enemy); self.enemies.add(self.enemy)
+        
+        self.camera = Camera(self.game_map.width_px, self.game_map.height_px)
 
         self.cigs_level = MAX_STAT_LEVEL
         self.bars_level = MAX_STAT_LEVEL
@@ -114,7 +133,6 @@ class Game:
         pygame.mixer.music.play(loops=-1)
 
     def run(self):
-        """Loop principal de uma partida."""
         while self.playing:
             self.dt = self.clock.tick(FPS) / 1000.0
             self.events()
@@ -128,11 +146,9 @@ class Game:
                     leaderboard.add_high_score(self.leaderboard_data, player_name, self.score)
                 show_leaderboard_screen(self)
             return death_screen(self)
-
         return "menu"
 
     def events(self):
-        """Processa os eventos de entrada (teclado, fechar janela)."""
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.playing = False
@@ -142,7 +158,6 @@ class Game:
                 pygame.mixer.music.fadeout(1000)
 
     def update(self):
-        """Atualiza o estado do jogo a cada frame."""
         if self.game_over_sequence_active:
             self.game_over_timer -= self.dt
             if self.game_over_timer <= 0:
@@ -156,6 +171,11 @@ class Game:
 
         self.player.update(self.dt, self.solids)
         self.enemy.update(self.dt, self.player, self.solids, self.game_map)
+        
+        # --- ATUALIZA A CÂMERA APENAS SE NECESSÁRIO ---
+        if self.is_procedural_map:
+            self.camera.update(self.player)
+        # ---------------------------------------------
 
         game_logic.handle_player_interactions(self)
         game_logic.handle_special_effects(self)
@@ -167,15 +187,21 @@ class Game:
             self.score = int(time.time() - self.start_time)
 
     def draw(self):
-        """Desenha todos os elementos na tela."""
-        self.game_map.draw(self.screen)
-        self.all_sprites.draw(self.screen)
-        self.enemy.draw_fov(self.screen, self.solids)
+        self.screen.fill(BLACK)
+        self.screen.blit(self.game_map.static_surface, self.camera.apply_rect(self.game_map.static_surface.get_rect()))
+
+        for sprite in sorted(self.all_sprites, key=lambda s: s.rect.centery):
+            self.screen.blit(sprite.image, self.camera.apply(sprite))
+        
+        # --- DESENHO DO FOV CORRIGIDO ---
+        self.enemy.draw_fov(self.screen, self.solids, self.camera)
+        # --------------------------------
+        
         draw_hud(self)
 
         legenda_surface_inimigo = self.hud_font.render(self.enemy.name, True, WHITE)
         legenda_rect_inimigo = legenda_surface_inimigo.get_rect(midbottom=self.enemy.rect.midtop - pygame.math.Vector2(0, 5))
-        self.screen.blit(legenda_surface_inimigo, legenda_rect_inimigo)
+        self.screen.blit(legenda_surface_inimigo, self.camera.apply_rect(legenda_rect_inimigo))
 
         texto_legenda_jogador, animation_frame = None, None
         if self.is_smoking:
@@ -188,18 +214,18 @@ class Game:
         if texto_legenda_jogador and animation_frame:
             legenda_surf = self.hud_font.render(texto_legenda_jogador, True, WHITE)
             legenda_rect = legenda_surf.get_rect(midbottom=self.player.rect.midtop - pygame.math.Vector2(0, 5))
-            self.screen.blit(legenda_surf, legenda_rect)
+            self.screen.blit(legenda_surf, self.camera.apply_rect(legenda_rect))
             
             scaled_frame = pygame.transform.smoothscale(animation_frame, (108, 84))
             anim_rect = scaled_frame.get_rect(midbottom=legenda_rect.midtop - pygame.math.Vector2(0, 3))
-            self.screen.blit(scaled_frame, anim_rect)
+            self.screen.blit(scaled_frame, self.camera.apply_rect(anim_rect))
 
         if self.aura_active:
             aura_rect = self.aura_image.get_rect(midtop=(self.player.rect.centerx, self.player.rect.bottom + 10))
-            self.screen.blit(self.aura_image, aura_rect)
+            self.screen.blit(self.aura_image, self.camera.apply_rect(aura_rect))
             aura_text_surf = self.hud_font.render("+AURA +EGO", True, WHITE)
             aura_text_rect = aura_text_surf.get_rect(midtop=(aura_rect.centerx, aura_rect.bottom + 5))
-            self.screen.blit(aura_text_surf, aura_text_rect)
+            self.screen.blit(aura_text_surf, self.camera.apply_rect(aura_text_rect))
 
         if HERB_ENABLED and self.chapado_effect_active:
             temp_surface = self.screen.copy()
@@ -211,7 +237,7 @@ class Game:
         if self.game_over_sequence_active:
             player_image_copy = self.player.image.copy()
             player_image_copy.fill(RED, special_flags=pygame.BLEND_RGB_MULT)
-            self.screen.blit(player_image_copy, self.player.rect)
+            self.screen.blit(player_image_copy, self.camera.apply(self.player))
 
         pygame.display.flip()
 
