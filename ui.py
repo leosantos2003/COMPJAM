@@ -1,4 +1,4 @@
-# ui.py
+# ui.py (Atualizado com Suporte a Joystick)
 import pygame
 from settings import *
 
@@ -31,6 +31,10 @@ def get_player_name_input(game):
                     player_name = player_name[:-1]
                 else:
                     player_name += event.unicode
+            # --- LÓGICA JOYSTICK ---
+            if event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0: # Botão A
+                    input_active = False
     return player_name
 
 def draw_menu_options(game, options, selected_option, start_y, line_spacing=60):
@@ -75,7 +79,8 @@ def show_briefing_screen(game):
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 game.quit()
-            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+            if (event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN) or \
+               (event.type == pygame.JOYBUTTONDOWN and event.button == 0):
                 briefing_active = False
 
         now = pygame.time.get_ticks()
@@ -109,6 +114,9 @@ def show_menu_screen(game):
     
     options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Dificuldade", "Leaderboard", "Sair"]
     selected_option = 0
+    
+    # --- CONTROLE PARA EVITAR REPETIÇÃO DE INPUT DO JOYSTICK ---
+    joy_axis_moved = False 
 
     while True:
         game.clock.tick(FPS)
@@ -123,6 +131,36 @@ def show_menu_screen(game):
             if event.type == pygame.QUIT:
                 game.running = False
                 return None, None
+            
+            # --- LÓGICA DE EVENTOS DO JOYSTICK ---
+            if event.type == pygame.JOYAXISMOTION:
+                if event.axis == 1: # Eixo Vertical
+                    if event.value < -0.5 and not joy_axis_moved:
+                        selected_option = (selected_option - 1) % len(options)
+                        if game.menu_nav_sound: game.menu_nav_sound.play()
+                        joy_axis_moved = True
+                    elif event.value > 0.5 and not joy_axis_moved:
+                        selected_option = (selected_option + 1) % len(options)
+                        if game.menu_nav_sound: game.menu_nav_sound.play()
+                        joy_axis_moved = True
+                    elif -0.5 < event.value < 0.5:
+                        joy_axis_moved = False
+
+            if event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0: # Botão A
+                    if selected_option < 3:
+                        return game.maps[selected_option], game.difficulty
+                    elif options[selected_option] == "Dificuldade":
+                        levels = list(DIFFICULTY_LEVELS.keys())
+                        current_idx = levels.index(game.difficulty)
+                        game.difficulty = levels[(current_idx + 1) % len(levels)]
+                    elif options[selected_option] == "Leaderboard":
+                        show_leaderboard_screen(game)
+                    elif options[selected_option] == "Sair":
+                        game.running = False
+                        return None, None
+
+            # --- LÓGICA DE EVENTOS DO TECLADO ---
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
                     selected_option = (selected_option + 1) % len(options)
@@ -153,9 +191,7 @@ def show_leaderboard_screen(game):
         title_rect = title_surf.get_rect(center=(SCREEN_WIDTH / 2, 100))
         game.screen.blit(title_surf, title_rect)
 
-        # --- CORREÇÃO APLICADA AQUI ---
         leaderboard_list = game.leaderboard_data.get("Pesadelo", [])
-        # -------------------------------
 
         if not leaderboard_list:
             no_scores_surf = game.menu_font_normal.render("Ainda não há pontuações.", True, GRAY)
@@ -177,7 +213,8 @@ def show_leaderboard_screen(game):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 game.quit()
-            if event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE):
+            if (event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE)) or \
+               (event.type == pygame.JOYBUTTONDOWN and event.button == 1): # Botão B para voltar
                 leaderboard_active = False
 
 def death_screen(game):
@@ -195,6 +232,7 @@ def death_screen(game):
 
     options = ["Recomeçar", "Voltar ao Menu"]
     selected_option = 0
+    joy_axis_moved = False
     
     while True:
         game.clock.tick(FPS)
@@ -208,6 +246,22 @@ def death_screen(game):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return "quit"
+
+            if event.type == pygame.JOYAXISMOTION:
+                if event.axis == 1:
+                    if event.value < -0.5 and not joy_axis_moved:
+                        selected_option = (selected_option - 1) % 2
+                        joy_axis_moved = True
+                    elif event.value > 0.5 and not joy_axis_moved:
+                        selected_option = (selected_option + 1) % 2
+                        joy_axis_moved = True
+                    elif -0.5 < event.value < 0.5:
+                        joy_axis_moved = False
+
+            if event.type == pygame.JOYBUTTONDOWN:
+                if event.button == 0:
+                    return "restart" if selected_option == 0 else "menu"
+
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_DOWN:
                     selected_option = (selected_option + 1) % 2

@@ -22,7 +22,6 @@ class Player(pygame.sprite.Sprite):
         self.image = self._apply_scale(frame0)
         self.rect = self.image.get_rect()
 
-        # posição (se o Map tiver spawn_px, usa ele)
         if hasattr(self.game, "game_map") and hasattr(self.game.game_map, "spawn_px"):
             px, py = self.game.game_map.spawn_px
         else:
@@ -31,10 +30,8 @@ class Player(pygame.sprite.Sprite):
         self.pos = pygame.math.Vector2(px, py)
         self.rect.midbottom = self.pos
 
-        # hitbox do player (um pouco menor que o sprite)
         self.hitbox = pygame.Rect(0, 0, int(self.rect.width * 0.7), int(self.rect.height * 0.7))
         self.hitbox.midbottom = self.rect.midbottom
-
 
         self.vx = 0.0
         self.vy = 0.0
@@ -45,16 +42,41 @@ class Player(pygame.sprite.Sprite):
     def get_keys(self):
         self.vx = self.vy = 0.0
         keys = pygame.key.get_pressed()
+
+        # Movimento pelo Teclado
         if keys[pygame.K_LEFT] or keys[pygame.K_a]:
-            self.vx = -PLAYER_SPEED; self.direction = 'left'
+            self.vx = -PLAYER_SPEED
+            self.direction = 'left'
         if keys[pygame.K_RIGHT] or keys[pygame.K_d]:
-            self.vx = PLAYER_SPEED; self.direction = 'right'
+            self.vx = PLAYER_SPEED
+            self.direction = 'right'
         if keys[pygame.K_UP] or keys[pygame.K_w]:
             self.vy = -PLAYER_SPEED
         if keys[pygame.K_DOWN] or keys[pygame.K_s]:
             self.vy = PLAYER_SPEED
+
+        # --- LÓGICA ATUALIZADA PARA O JOYSTICK ---
+        if self.game.joysticks:
+            joystick = self.game.joysticks[0]
+            
+            axis_x = joystick.get_axis(0)
+            if axis_x < -0.5:
+                self.vx = -PLAYER_SPEED
+                self.direction = 'left'
+            elif axis_x > 0.5:
+                self.vx = PLAYER_SPEED
+                self.direction = 'right'
+
+            axis_y = joystick.get_axis(1)
+            if axis_y < -0.5:
+                self.vy = -PLAYER_SPEED
+            elif axis_y > 0.5:
+                self.vy = PLAYER_SPEED
+        # --- FIM DA LÓGICA ATUALIZADA ---
+
         if self.vx and self.vy:
-            self.vx *= 0.7071; self.vy *= 0.7071
+            self.vx *= 0.7071
+            self.vy *= 0.7071
 
     def _set_state(self):
         moving = abs(self.vx) > 1 or abs(self.vy) > 1
@@ -97,7 +119,6 @@ class Player(pygame.sprite.Sprite):
                     elif self.vy < 0:
                         self.hitbox.top = r.bottom
                     self.pos.y = self.hitbox.bottom
-                # mantém sprite alinhado ao hitbox
                 self.rect.midbottom = (int(self.pos.x), int(self.pos.y))
 
     def update(self, dt, solids=None):
@@ -105,14 +126,12 @@ class Player(pygame.sprite.Sprite):
         self.get_keys()
         self._set_state()
 
-        # X
         self.pos.x += self.vx * dt
         self._clamp_pos()
         self.rect.midbottom = (int(self.pos.x), int(self.pos.y))
         self.hitbox.midbottom = self.rect.midbottom
         self._collide_axis(solids, "x")
 
-        # Y
         self.pos.y += self.vy * dt
         self._clamp_pos()
         self.rect.midbottom = (int(self.pos.x), int(self.pos.y))

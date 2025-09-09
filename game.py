@@ -1,10 +1,10 @@
-# game.py (Corrigido)
+# game.py (Corrigido e com Suporte a Joystick)
 
 import pygame
 import sys
 import time
 import random
-import math
+import math # <--- CORREÇÃO APLICADA AQUI
 import json
 from settings import *
 from player import Player
@@ -23,6 +23,9 @@ class Game:
     def __init__(self):
         pygame.mixer.pre_init(44100, -16, 2, 512)
         pygame.init()
+        
+        pygame.joystick.init()
+        self.joysticks = [pygame.joystick.Joystick(x) for x in range(pygame.joystick.get_count())]
 
         if FULLSCREEN:
             self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.FULLSCREEN)
@@ -81,8 +84,6 @@ class Game:
         self.result = None
         self.start_time = time.time()
         
-        # --- CORREÇÃO APLICADA AQUI ---
-        # Reset de estados de animação e efeitos
         self.is_smoking = False
         self.is_doing_pullups = False
         self.smoke_anim_index = 0
@@ -96,7 +97,6 @@ class Game:
         self.chapado_effect_active = False
         self.chapado_timer = 0
         self.chapado_duration = 5.0
-        # -------------------------------
 
         pygame.mixer.music.play(loops=-1)
 
@@ -111,7 +111,7 @@ class Game:
         if self.result == "lose":
             if leaderboard.is_high_score(self.leaderboard_data, self.score, self.difficulty):
                 player_name = get_player_name_input(self)
-                if player_name: # Garante que o nome não seja vazio
+                if player_name:
                     leaderboard.add_high_score(self.leaderboard_data, player_name, self.score)
                 show_leaderboard_screen(self)
             return death_screen(self)
