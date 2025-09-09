@@ -1,4 +1,4 @@
-# ui.py (Atualizado com Suporte a Joystick)
+# ui.py (Atualizado com menu de mapa comprimido)
 import pygame
 from settings import *
 
@@ -31,13 +31,12 @@ def get_player_name_input(game):
                     player_name = player_name[:-1]
                 else:
                     player_name += event.unicode
-            # --- LÓGICA JOYSTICK ---
             if event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 0: # Botão A
                     input_active = False
     return player_name
 
-def draw_menu_options(game, options, selected_option, start_y, line_spacing=60):
+def draw_menu_options(game, options, selected_option, start_y, line_spacing=60, current_map_index=0):
     for i, option_text in enumerate(options):
         is_selected = (i == selected_option)
         
@@ -51,7 +50,16 @@ def draw_menu_options(game, options, selected_option, start_y, line_spacing=60):
         else:
             color = GRAY
 
-        text_str = f"{arrow}Dificuldade: {game.difficulty}" if option_text == "Dificuldade" else f"{arrow}{option_text}"
+        # --- LÓGICA ATUALIZADA PARA MOSTRAR TEXTO DO MENU ---
+        if option_text == "Mapa":
+            text_str = f"{arrow}Mapa: {current_map_index + 1}"
+        elif option_text == "Dificuldade":
+            text_str = f"{arrow}Dificuldade: {game.difficulty}"
+        elif option_text == "Volume":
+            text_str = f"{arrow}Volume: {int(game.volume * 100)}%"
+        else:
+            text_str = f"{arrow}{option_text}"
+        # ----------------------------------------------------
 
         text_surf = font.render(text_str, True, color)
         text_rect = text_surf.get_rect(center=(SCREEN_WIDTH / 2, start_y + i * line_spacing))
@@ -112,11 +120,13 @@ def show_menu_screen(game):
     title1_rect = title1_surf.get_rect(x=start_x, centery=SCREEN_HEIGHT / 4)
     title2_rect = title2_surf.get_rect(x=title1_rect.right, centery=SCREEN_HEIGHT / 4)
     
-    options = ["Jogar Mapa 1", "Jogar Mapa 2", "Jogar Mapa 3", "Dificuldade", "Leaderboard", "Sair"]
+    # --- OPÇÕES ATUALIZADAS ---
+    options = ["Jogar", "Mapa", "Dificuldade", "Volume", "Leaderboard", "Sair"]
     selected_option = 0
+    current_map_index = 0
     
-    # --- CONTROLE PARA EVITAR REPETIÇÃO DE INPUT DO JOYSTICK ---
-    joy_axis_moved = False 
+    joy_axis_moved_y = False
+    joy_axis_moved_x = False
 
     while True:
         game.clock.tick(FPS)
@@ -125,7 +135,7 @@ def show_menu_screen(game):
         game.screen.blit(title1_surf, title1_rect)
         game.screen.blit(title2_surf, title2_rect)
 
-        draw_menu_options(game, options, selected_option, start_y=SCREEN_HEIGHT / 2)
+        draw_menu_options(game, options, selected_option, start_y=SCREEN_HEIGHT / 2, current_map_index=current_map_index)
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -134,22 +144,41 @@ def show_menu_screen(game):
             
             # --- LÓGICA DE EVENTOS DO JOYSTICK ---
             if event.type == pygame.JOYAXISMOTION:
-                if event.axis == 1: # Eixo Vertical
-                    if event.value < -0.5 and not joy_axis_moved:
+                if event.axis == 1: # Eixo Vertical (Navegação)
+                    if event.value < -0.5 and not joy_axis_moved_y:
                         selected_option = (selected_option - 1) % len(options)
                         if game.menu_nav_sound: game.menu_nav_sound.play()
-                        joy_axis_moved = True
-                    elif event.value > 0.5 and not joy_axis_moved:
+                        joy_axis_moved_y = True
+                    elif event.value > 0.5 and not joy_axis_moved_y:
                         selected_option = (selected_option + 1) % len(options)
                         if game.menu_nav_sound: game.menu_nav_sound.play()
-                        joy_axis_moved = True
+                        joy_axis_moved_y = True
                     elif -0.5 < event.value < 0.5:
-                        joy_axis_moved = False
+                        joy_axis_moved_y = False
+                
+                if event.axis == 0: # Eixo Horizontal
+                    if options[selected_option] == "Volume":
+                        if event.value < -0.5 and not joy_axis_moved_x:
+                            game.set_volume(game.volume - 0.1)
+                            joy_axis_moved_x = True
+                        elif event.value > 0.5 and not joy_axis_moved_x:
+                            game.set_volume(game.volume + 0.1)
+                            joy_axis_moved_x = True
+                    elif options[selected_option] == "Mapa":
+                        if event.value < -0.5 and not joy_axis_moved_x:
+                            current_map_index = (current_map_index - 1) % len(game.maps)
+                            joy_axis_moved_x = True
+                        elif event.value > 0.5 and not joy_axis_moved_x:
+                            current_map_index = (current_map_index + 1) % len(game.maps)
+                            joy_axis_moved_x = True
+                    
+                    if -0.5 < event.value < 0.5:
+                        joy_axis_moved_x = False
 
             if event.type == pygame.JOYBUTTONDOWN:
                 if event.button == 0: # Botão A
-                    if selected_option < 3:
-                        return game.maps[selected_option], game.difficulty
+                    if options[selected_option] == "Jogar":
+                        return game.maps[current_map_index], game.difficulty
                     elif options[selected_option] == "Dificuldade":
                         levels = list(DIFFICULTY_LEVELS.keys())
                         current_idx = levels.index(game.difficulty)
@@ -162,15 +191,28 @@ def show_menu_screen(game):
 
             # --- LÓGICA DE EVENTOS DO TECLADO ---
             if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_DOWN:
-                    selected_option = (selected_option + 1) % len(options)
-                    if game.menu_nav_sound: game.menu_nav_sound.play()
-                elif event.key == pygame.K_UP:
+                if event.key == pygame.K_UP:
                     selected_option = (selected_option - 1) % len(options)
                     if game.menu_nav_sound: game.menu_nav_sound.play()
+                elif event.key == pygame.K_DOWN:
+                    selected_option = (selected_option + 1) % len(options)
+                    if game.menu_nav_sound: game.menu_nav_sound.play()
+                
+                if options[selected_option] == "Volume":
+                    if event.key == pygame.K_LEFT:
+                        game.set_volume(game.volume - 0.1)
+                    elif event.key == pygame.K_RIGHT:
+                        game.set_volume(game.volume + 0.1)
+
+                if options[selected_option] == "Mapa":
+                    if event.key == pygame.K_LEFT:
+                        current_map_index = (current_map_index - 1) % len(game.maps)
+                    elif event.key == pygame.K_RIGHT:
+                        current_map_index = (current_map_index + 1) % len(game.maps)
+
                 if event.key == pygame.K_RETURN:
-                    if selected_option < 3:
-                        return game.maps[selected_option], game.difficulty
+                    if options[selected_option] == "Jogar":
+                        return game.maps[current_map_index], game.difficulty
                     elif options[selected_option] == "Dificuldade":
                         levels = list(DIFFICULTY_LEVELS.keys())
                         current_idx = levels.index(game.difficulty)
@@ -214,7 +256,7 @@ def show_leaderboard_screen(game):
             if event.type == pygame.QUIT:
                 game.quit()
             if (event.type == pygame.KEYDOWN and (event.key == pygame.K_RETURN or event.key == pygame.K_ESCAPE)) or \
-               (event.type == pygame.JOYBUTTONDOWN and event.button == 1): # Botão B para voltar
+               (event.type == pygame.JOYBUTTONDOWN and event.button == 1):
                 leaderboard_active = False
 
 def death_screen(game):

@@ -1,10 +1,10 @@
-# game.py (Corrigido e com Suporte a Joystick)
+# game.py (Corrigido, com Suporte a Joystick e Controle de Volume)
 
 import pygame
 import sys
 import time
 import random
-import math # <--- CORREÇÃO APLICADA AQUI
+import math
 import json
 from settings import *
 from player import Player
@@ -40,6 +40,11 @@ class Game:
         self.assets = load_assets()
         self.map_assets_to_attributes()
 
+        # --- NOVA LÓGICA DE VOLUME ---
+        self.volume = INITIAL_VOLUME
+        self.set_volume(self.volume)
+        # -----------------------------
+
         self.maps = ["map.txt", "map2.txt", "map3.txt"]
         self.score = 0
         self.start_time = 0
@@ -53,6 +58,14 @@ class Game:
         """Mapeia o dicionário de assets para atributos de fácil acesso."""
         for key, value in self.assets.items():
             setattr(self, key, value)
+
+    def set_volume(self, new_volume):
+        """Ajusta o volume da música e de todos os efeitos sonoros."""
+        self.volume = clamp(new_volume, 0.0, 1.0)
+        pygame.mixer.music.set_volume(self.volume)
+        for asset in self.assets.values():
+            if isinstance(asset, pygame.mixer.Sound):
+                asset.set_volume(self.volume)
 
     def new(self, map_file, difficulty):
         """Inicializa uma nova partida."""

@@ -28,19 +28,14 @@ def load_assets():
 
     try:
         pygame.mixer.music.load('audio/background_music.mp3')
-        pygame.mixer.music.set_volume(0.4)
     except pygame.error as e:
         print(f"Aviso: Não foi possível carregar a música de fundo: {e}")
 
     try:
         assets['smoking_sound'] = pygame.mixer.Sound('audio/smoke_sound.mp3')
-        assets['smoking_sound'].set_volume(0.6)
         assets['pullup_sound'] = pygame.mixer.Sound('audio/bar_sound.mp3')
-        assets['pullup_sound'].set_volume(0.6)
         assets['jumpscare_sound'] = pygame.mixer.Sound('audio/jumpscare.mp3')
-        assets['jumpscare_sound'].set_volume(0.7)
         assets['caught_sound'] = pygame.mixer.Sound('audio/death_scream.mp3')
-        assets['caught_sound'].set_volume(0.8)
     except pygame.error as e:
         print(f"Aviso: Não foi possível carregar um ou mais efeitos sonoros: {e}")
 

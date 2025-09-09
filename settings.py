@@ -1,4 +1,4 @@
-# settings.py RESOLVIDO
+# settings.py (RESOLVIDO)
 
 # Configurações da tela
 SCREEN_WIDTH = 1280
@@ -6,6 +6,10 @@ SCREEN_HEIGHT = 720
 FULLSCREEN = True  # Mude para False para jogar em modo janela
 FPS = 60
 TITLE = "Grand Theft Auto V: INF Version"
+
+# --- NOVA CONFIGURAÇÃO DE VOLUME ---
+INITIAL_VOLUME = 0.4 # Volume inicial para música e efeitos (de 0.0 a 1.0)
+# ------------------------------------
 
 # Cores
 BLACK = (0, 0, 0)
