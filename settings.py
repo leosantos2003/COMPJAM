@@ -3,7 +3,7 @@
 # Configurações da tela
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-FULLSCREEN = True  # Mude para False para jogar em modo janela
+FULLSCREEN = False  # Mude para False para jogar em modo janela
 FPS = 60
 TITLE = "Grand Theft Auto V: INF Version"
 

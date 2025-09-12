@@ -118,7 +118,7 @@ def show_menu_screen(game):
     title1_rect = title1_surf.get_rect(x=start_x, centery=SCREEN_HEIGHT / 4)
     title2_rect = title2_surf.get_rect(x=title1_rect.right, centery=SCREEN_HEIGHT / 4)
     
-    options = ["Jogar Mapa Estático", "Jogar Modo Infinito", "Mapa", "Dificuldade", "Volume", "Leaderboard", "Sair"]
+    options = ["Jogar Mapa Estático", "Jogar Mapa Grande Aleatório", "Mapa", "Dificuldade", "Volume", "Leaderboard", "Sair"]
     selected_option = 0
     current_map_index = 0
     
@@ -176,7 +176,7 @@ def show_menu_screen(game):
                 if event.button == 0: # Botão A
                     if options[selected_option] == "Jogar Mapa Estático":
                         return game.maps[current_map_index], game.difficulty
-                    elif options[selected_option] == "Jogar Modo Infinito":
+                    elif options[selected_option] == "Jogar Mapa Grande Aleatório":
                         return "procedural", game.difficulty
                     elif options[selected_option] == "Dificuldade":
                         levels = list(DIFFICULTY_LEVELS.keys())
@@ -213,7 +213,7 @@ def show_menu_screen(game):
                 if event.key == pygame.K_RETURN:
                     if options[selected_option] == "Jogar Mapa Estático":
                         return game.maps[current_map_index], game.difficulty
-                    elif options[selected_option] == "Jogar Modo Infinito":
+                    elif options[selected_option] == "Jogar Mapa Grande Aleatório":
                         return "procedural", game.difficulty
                     elif options[selected_option] == "Dificuldade":
                         levels = list(DIFFICULTY_LEVELS.keys())
